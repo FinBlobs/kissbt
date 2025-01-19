@@ -24,8 +24,7 @@ class Broker:
 
         self.open_positions: Dict[str, OpenPosition] = dict()
         self.closed_positions: List[ClosedPosition] = []
-        self.buy_next_bar: List[Order] = []
-        self.sell_next_bar: List[Order] = []
+        self.open_orders: List[Order] = []
 
         self.long_only = long_only
         self.short_fee_rate = short_fee_rate
@@ -274,11 +273,10 @@ class Broker:
                 )
 
         # buy and sell assets
-        open_orders = self.buy_next_bar + self.sell_next_bar
         ticker_not_available = set(
-            [open_order.ticker for open_order in open_orders]
+            [open_order.ticker for open_order in self.open_orders]
         ) - set(next_bar.index)
-        for open_order in open_orders:
+        for open_order in self.open_orders:
             if open_order.ticker in ticker_not_available:
                 if open_order.size > 0:
                     print(f"{open_order.ticker} could not be bought on {next_date}.")
@@ -291,15 +289,10 @@ class Broker:
                 next_date,
             )
 
-        # if orders were not filled, they could be valid for the next bar
-        self.sell_next_bar = [
+        # Retain orders that are good till cancel and were not filled for the next bar
+        self.open_orders = [
             open_order
-            for open_order in self.sell_next_bar
-            if open_order.good_till_cancel and not open_order.was_filled
-        ]
-        self.buy_next_bar = [
-            open_order
-            for open_order in self.buy_next_bar
+            for open_order in self.open_orders
             if open_order.good_till_cancel and not open_order.was_filled
         ]
 
