@@ -50,22 +50,32 @@ jobs:
   conda-publish:
     runs-on: ubuntu-latest
     needs: release-build
-
     steps:
       - uses: actions/checkout@v4
 
+      # Set up and activate Miniconda in "base"
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-activate-base: true
+          # If you want a specific Python version in base, you can set it here
+          # python-version: 3.9
+          channel-priority: strict
+          channels: conda-forge
 
+      # Install conda-build and anaconda-client inside the same shell session
       - name: Install dependencies
+        shell: bash -l {0}
         run: conda install -y conda-build anaconda-client
 
+      # Now conda-build is in PATH
       - name: Build Conda package
+        shell: bash -l {0}
         run: conda-build conda-recipe
 
+      # Upload the built package
       - name: Upload Conda package
+        shell: bash -l {0}
         run: |
           anaconda login --token ${{ secrets.ANACONDA_TOKEN }}
           anaconda upload --skip-existing $(conda-build --output conda-recipe)
