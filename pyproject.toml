@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kissbt"
-version = "0.1.2"
+version = "0.1.3"
 description = "The keep it simple backtesting framework for Python."
 readme = "README.md"
 authors = [
