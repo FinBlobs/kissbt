@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: release-build
     permissions:
-      contents: write
+      id-token: write  # Required for trusted publishing
 
     steps:
       - name: Retrieve release distributions
@@ -46,9 +46,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
 
   conda-publish:
     runs-on: ubuntu-latest
@@ -62,8 +59,8 @@ jobs:
         with:
           auto-activate-base: true
 
-      - name: Install conda-build and anaconda-client
-        run: conda install -y conda-build anaconda-client
+      - name: Install dependencies
+        run: conda install -y conda-build anaconda-client python=3.x
 
       - name: Build Conda package
         run: conda-build conda-recipe
@@ -71,4 +68,4 @@ jobs:
       - name: Upload Conda package
         run: |
           anaconda login --token ${{ secrets.ANACONDA_TOKEN }}
-          anaconda upload $(conda-build --output conda-recipe)
+          anaconda upload --skip-existing $(conda-build --output conda-recipe)
