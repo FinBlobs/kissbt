@@ -5,9 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "kissbt"
 version = "0.1.0"
-description = "A brief description of the project."
+description = "The keep it simple backtesting framework for Python."
 readme = "README.md"
 authors = [
+    { name = "Adrian Hasse", email = "adrian.hasse@finblobs.com" }
+]
+maintainers = [
     { name = "Adrian Hasse", email = "adrian.hasse@finblobs.com" }
 ]
 license = { file = "LICENSE" }
@@ -16,8 +19,23 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent"
 ]
-dependencies = ["pandas"]
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib"
+]
 requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "flake8",
+    "black",
+    "isort",
+    "yfinance",
+    "pyarrow",
+]
 
 [project.urls]
 homepage = "https://github.com/FinBlobs/kissbt"

@@ -1,24 +1,42 @@
 # kissbt
 
-`kissbt` (Keep It Simple Stupid Backtesting) is a Python library designed for backtesting trading strategies with simplicity and ease of use in mind. The library provides essential components for creating, running, and analyzing trading strategies.
+**kissbt**, the `keep it simple` backtesting framework, is a lightweight and user-friendly Python framework for backtesting trading strategies. It focuses on simplicity, performance, and ease of extensibility while providing essential tools for effective backtesting.
+
+## Why kissbt?
+
+- **🚀 Lightweight** – Minimal dependencies ensure fast installation and execution.
+- **📖 Simple API** – Lowers the barrier for traders new to backtesting.
+- **🔌 Extensible** – Modular architecture enables easy customization.
+- **📊 Essential Features** – Includes tools for data handling, strategy implementation, and performance evaluation.
 
 ## Features
 
-- **Modular Design**: The library is composed of several modules, each handling a specific aspect of the backtesting process.
-- **Strategy Implementation**: Easily implement custom trading strategies by extending the `Strategy` class.
-- **Broker Simulation**: Simulate trading with the `Broker` class, which manages orders, positions, and cash.
-- **Performance Analysis**: Analyze trading performance with the `Analyzer` class, which calculates key metrics like total return, Sharpe ratio, and drawdown.
-- **Data Handling**: Efficiently handle and preprocess market data using `pandas`.
-- **Visualization**: Plot equity curves and drawdowns to visualize strategy performance.
+✔️ Object-oriented design for intuitive strategy development
+✔️ Fast execution, even for large universes
+✔️ Supports long and short positions
+✔️ Built-in trade execution, position tracking, and P&L calculation
+✔️ Performance analysis with key trading metrics
+✔️ Backtesting with historical market data
+✔️ Modular components (Strategy, Broker, Engine, Analyzer)
 
 ## Installation
 
-To install `kissbt`, clone the repository and install the dependencies:
+You can install `kissbt` using either `pip` or `conda`.
 
-```bash
-git clone https://github.com/FinBlobs/kissbt.git
-cd kissbt
-pip install -r requirements.txt
+### Using pip
+
+To install `kissbt` via `pip`, run the following command:
+
+```sh
+pip install kissbt
+```
+
+### Using conda
+
+To install `kissbt` via `conda`, run the following command:
+
+```sh
+conda install kissbt
 ```
 
 ## Usage
@@ -32,14 +50,14 @@ from kissbt.strategy import Strategy
 from kissbt.entities import Order, OrderType
 
 class MyStrategy(Strategy):
-    def generate_orders(self, current_data, current_datetime, previous_data=None, previous_datetime=None):
+    def generate_orders(self, current_data, current_datetime):
         # Example: Buy if the close price is above the 128-day SMA
-        for ticker in current_data.index.get_level_values('ticker').unique():
-            close_price = current_data.loc[(current_datetime, ticker), 'close']
-            sma_128 = current_data.loc[(current_datetime, ticker), 'sma_128']
+        for ticker in current_data.index:
+            close_price = current_data.loc[ticker, "close"]
+            sma_128 = current_data.loc[ticker, "sma_128"]
             if close_price > sma_128:
                 order = Order(ticker=ticker, size=10, order_type=OrderType.OPEN)
-                self.broker.open_orders.append(order)
+                self._broker.place_order(order)
 ```
 
 ### 2. Set Up the Broker
@@ -49,7 +67,7 @@ Initialize the `Broker` with starting capital, fees, and other parameters:
 ```python
 from kissbt.broker import Broker
 
-broker = Broker(start_capital=100000, fees=0.001, tax_rate=0.2)
+broker = Broker(start_capital=100000, fees=0.001)
 ```
 
 ### 3. Run the Backtest
@@ -93,7 +111,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! If you have ideas, bug fixes, or feature requests, feel free to open an issue or submit a pull request.
 
 ## Contact
 
