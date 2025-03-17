@@ -376,7 +376,7 @@ class Broker:
         # sell assets out of universe, we use close price of previous bar, since this is
         # the last price we know
         ticker_out_of_universe = set()
-        if self._previous_bar.empty:
+        if not self._previous_bar.empty:
             ticker_out_of_universe = set(self._open_positions.keys()) - set(
                 self._current_bar.index
             )
