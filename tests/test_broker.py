@@ -351,3 +351,23 @@ def test_update_open_positions_cases(
     else:
         assert broker._open_positions["AAPL"].size == expected_size
         assert broker._open_positions["AAPL"].price == pytest.approx(expected_price)
+
+
+def test_update_ticker_out_of_universe(broker):
+    broker._open_positions["AAPL"] = OpenPosition("AAPL", 10, 100, datetime(2024, 1, 1))
+
+    broker.update(
+        pd.DataFrame({"close": [100, 500]}, index=["GOOG", "AAPL"]),
+        datetime(2024, 1, 2),
+    )
+
+    broker.update(pd.DataFrame({"close": [110]}, index=["GOOG"]), datetime(2024, 1, 3))
+
+    assert len(broker._closed_positions) == 1
+    closed_pos = broker._closed_positions[0]
+    assert closed_pos.ticker == "AAPL"
+    assert closed_pos.size == 10
+    assert closed_pos.purchase_price == 100
+    assert closed_pos.selling_price == 500
+    assert closed_pos.purchase_datetime == datetime(2024, 1, 1)
+    assert closed_pos.selling_datetime == datetime(2024, 1, 2)
