@@ -36,7 +36,7 @@ pip install kissbt
 To install `kissbt` via `conda`, run the following command:
 
 ```sh
-conda install kissbt
+conda install -c conda-forge kissbt
 ```
 
 ## Usage

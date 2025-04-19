@@ -46,29 +46,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-
-  conda-publish:
-    runs-on: ubuntu-latest
-    needs: release-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-activate-base: true
-          channel-priority: strict
-          channels: conda-forge
-
-      - name: Install dependencies
-        shell: bash -l {0}
-        run: conda install -y conda-build anaconda-client
-
-      - name: Build Conda package
-        shell: bash -l {0}
-        run: conda-build conda-recipe
-
-      - name: Upload Conda package
-        shell: bash -l {0}
-        run: |
-          anaconda --token ${{ secrets.ANACONDA_TOKEN }} upload --skip-existing $(conda-build --output conda-recipe)
