@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import pytest
 import yfinance as yf
-
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 
