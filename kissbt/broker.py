@@ -64,9 +64,9 @@ class Broker:
         self._open_orders: List[Order] = []
 
         self._current_bar: pd.DataFrame = pd.DataFrame()
-        self._current_datetime = None
+        self._current_datetime: Optional[datetime] = None
         self._previous_bar: pd.DataFrame = pd.DataFrame()
-        self._previous_datetime = None
+        self._previous_datetime: Optional[datetime] = None
 
         self._long_only = long_only
         self._short_fee_rate = short_fee_rate
@@ -376,7 +376,7 @@ class Broker:
         # sell assets out of universe, we use close price of previous bar, since this is
         # the last price we know
         ticker_out_of_universe = set()
-        if not self._previous_bar.empty:
+        if not self._previous_bar.empty and self._previous_datetime is not None:
             ticker_out_of_universe = set(self._open_positions.keys()) - set(
                 self._current_bar.index
             )
@@ -404,7 +404,8 @@ class Broker:
                     )
                 continue
             if (
-                not self._execute_order(
+                self._current_datetime is not None
+                and not self._execute_order(
                     open_order, self._current_bar, self._current_datetime
                 )
                 and open_order.good_till_cancel
@@ -578,13 +579,13 @@ class Broker:
         return self._cash
 
     @property
-    def benchmark(self) -> str:
+    def benchmark(self) -> Optional[str]:
         """Gets the benchmark symbol used for performance comparison.
 
         The benchmark tracks a reference asset (e.g., market index) to evaluate relative
         strategy performance. Returns None if no benchmark was specified.
 
         Returns:
-            str: Ticker symbol of the benchmark instrument.
+            Optional[str]: Ticker symbol of the benchmark instrument, or None if not set.
         """
         return self._benchmark
