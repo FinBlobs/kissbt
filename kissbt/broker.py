@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 import pandas as pd
 
@@ -376,7 +376,7 @@ class Broker:
         # sell assets out of universe, we use close price of previous bar, since this is
         # the last price we know
         ticker_out_of_universe = set()
-        if not self._previous_bar.empty and self._previous_datetime is not None:
+        if not self._previous_bar.empty:
             ticker_out_of_universe = set(self._open_positions.keys()) - set(
                 self._current_bar.index
             )
@@ -384,7 +384,7 @@ class Broker:
                 self._execute_order(
                     Order(ticker, -self._open_positions[ticker].size, OrderType.CLOSE),
                     self._previous_bar,
-                    self._previous_datetime,
+                    cast(datetime, self._previous_datetime),
                 )
 
         # buy and sell assets
@@ -404,9 +404,10 @@ class Broker:
                     )
                 continue
             if (
-                self._current_datetime is not None
-                and not self._execute_order(
-                    open_order, self._current_bar, self._current_datetime
+                not self._execute_order(
+                    open_order,
+                    self._current_bar,
+                    cast(datetime, self._current_datetime),
                 )
                 and open_order.good_till_cancel
             ):

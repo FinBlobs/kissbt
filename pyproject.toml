@@ -60,9 +60,6 @@ select = [
     "F",   # pyflakes
     "I",   # isort
 ]
-ignore = [
-    "E203",  # whitespace before ':'
-]
 # TODO: Gradually add more rules like N, UP, C4, B
 
 [tool.ruff.format]
@@ -83,13 +80,3 @@ ignore_missing_imports = true
 check_untyped_defs = false
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
-
-# Allow missing imports for external libraries
-[[tool.mypy.overrides]]
-module = [
-    "yfinance.*",
-    "matplotlib.*",
-    "pandas.*",
-    "numpy.*",
-]
-ignore_missing_imports = true
