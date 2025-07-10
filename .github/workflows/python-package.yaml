@@ -27,16 +27,15 @@ jobs:
         if [ -f pyproject.toml ]; then
           pip install .[dev]
         fi
-    - name: Lint with flake8
+    - name: Lint and format with ruff
       run: |
-        # Run flake8 and fail the build if there are any issues
-        flake8 . --count --max-complexity=10 --max-line-length=88 --statistics
-    - name: Lint with black
+        # Check formatting
+        ruff format --check .
+        # Run linting
+        ruff check .
+    - name: Type check with mypy
       run: |
-        black --check .
-    - name: Lint with isort
-      run: |
-        isort . --check-only
+        mypy kissbt tests
     - name: Test with pytest
       run: |
         pytest
