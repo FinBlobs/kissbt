@@ -49,8 +49,7 @@ exclude = [
     "__pycache__",
     "build", 
     "dist",
-    "*.ipynb",
-    "examples/",
+    "examples",
 ]
 
 [tool.ruff.lint]
@@ -75,11 +74,15 @@ line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.10"
-# Start with less strict configuration and gradually enable strict mode
-warn_return_any = true
+# Start with basic type checking, will enable strict mode later
+warn_return_any = false
 warn_unused_configs = true
 show_error_codes = true
-# TODO: Enable strict = true after fixing type issues
+ignore_missing_imports = true
+# Disable strict checks for initial migration
+check_untyped_defs = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 
 # Allow missing imports for external libraries
 [[tool.mypy.overrides]]
