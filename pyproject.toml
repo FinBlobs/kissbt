@@ -74,3 +74,13 @@ strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 show_error_codes = true
+
+# Allow missing imports for external libraries
+[[tool.mypy.overrides]]
+module = [
+    "yfinance.*",
+    "matplotlib.*",
+    "pandas.*",
+    "numpy.*",
+]
+ignore_missing_imports = true
