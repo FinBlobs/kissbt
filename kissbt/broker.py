@@ -586,6 +586,7 @@ class Broker:
         strategy performance. Returns None if no benchmark was specified.
 
         Returns:
-            Optional[str]: Ticker symbol of the benchmark instrument, or None if not set.
+            Optional[str]: Ticker symbol of the benchmark instrument, or None if not
+                set.
         """
         return self._benchmark
