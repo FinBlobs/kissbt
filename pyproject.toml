@@ -76,7 +76,3 @@ warn_return_any = false
 warn_unused_configs = true
 show_error_codes = true
 ignore_missing_imports = true
-# Disable strict checks for initial migration
-check_untyped_defs = false
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
