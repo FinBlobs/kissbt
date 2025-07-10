@@ -27,14 +27,20 @@ jobs:
         if [ -f pyproject.toml ]; then
           pip install .[dev]
         fi
+        # Ensure ruff and mypy are available
+        pip install ruff mypy
     - name: Lint and format with ruff
       run: |
+        # Check if ruff is available
+        ruff --version
         # Check formatting
         ruff format --check .
         # Run linting
         ruff check .
     - name: Type check with mypy
       run: |
+        # Check if mypy is available
+        mypy --version
         mypy kissbt tests
     - name: Test with pytest
       run: |
