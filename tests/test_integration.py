@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from kissbt.engine import Engine
@@ -66,9 +65,9 @@ def test_analyzer_with_golden_cross(tech_stock_data):
     assert len(broker.open_positions) == 0, "All positions should be closed"
     assert pytest.approx(broker.cash, 0.01) == 167534.46, "Final cash manually verified"
     assert pytest.approx(broker.portfolio_value, 0.01) == 167534.46
-    assert (
-        len(broker.closed_positions) == 15
-    ), "15 trades should have been executed, manually verified"
+    assert len(broker.closed_positions) == 15, (
+        "15 trades should have been executed, manually verified"
+    )
 
     # Create the Analyzer
     analyzer = Analyzer(broker, bar_size="1D")

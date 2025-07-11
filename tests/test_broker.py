@@ -2,7 +2,6 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
 from kissbt.broker import Broker
 from kissbt.entities import OpenPosition, Order, OrderType
 

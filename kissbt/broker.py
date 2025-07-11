@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 import pandas as pd
 
@@ -64,9 +64,9 @@ class Broker:
         self._open_orders: List[Order] = []
 
         self._current_bar: pd.DataFrame = pd.DataFrame()
-        self._current_datetime = None
+        self._current_datetime: Optional[datetime] = None
         self._previous_bar: pd.DataFrame = pd.DataFrame()
-        self._previous_datetime = None
+        self._previous_datetime: Optional[datetime] = None
 
         self._long_only = long_only
         self._short_fee_rate = short_fee_rate
@@ -384,7 +384,7 @@ class Broker:
                 self._execute_order(
                     Order(ticker, -self._open_positions[ticker].size, OrderType.CLOSE),
                     self._previous_bar,
-                    self._previous_datetime,
+                    cast(datetime, self._previous_datetime),
                 )
 
         # buy and sell assets
@@ -405,7 +405,9 @@ class Broker:
                 continue
             if (
                 not self._execute_order(
-                    open_order, self._current_bar, self._current_datetime
+                    open_order,
+                    self._current_bar,
+                    cast(datetime, self._current_datetime),
                 )
                 and open_order.good_till_cancel
             ):
@@ -578,13 +580,14 @@ class Broker:
         return self._cash
 
     @property
-    def benchmark(self) -> str:
+    def benchmark(self) -> Optional[str]:
         """Gets the benchmark symbol used for performance comparison.
 
         The benchmark tracks a reference asset (e.g., market index) to evaluate relative
         strategy performance. Returns None if no benchmark was specified.
 
         Returns:
-            str: Ticker symbol of the benchmark instrument.
+            Optional[str]: Ticker symbol of the benchmark instrument, or None if not
+                set.
         """
         return self._benchmark
