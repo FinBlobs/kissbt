@@ -20,10 +20,10 @@ class Engine:
         self.strategy = strategy
 
     def run(self, data: pd.DataFrame) -> None:
-        for current_date, current_data in data.groupby("date"):
-            current_data.index = current_data.index.droplevel("date")
+        for current_timestamp, current_data in data.groupby("timestamp"):
+            current_data.index = current_data.index.droplevel("timestamp")
 
-            self.broker.update(current_data, current_date)
-            self.strategy(current_data, current_date)
+            self.broker.update(current_data, current_timestamp)
+            self.strategy.generate_orders(current_data, current_timestamp)
 
         self.broker.liquidate_positions()

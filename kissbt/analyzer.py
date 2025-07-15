@@ -23,13 +23,13 @@ class Analyzer:
         Parameters:
             broker (Broker): The broker instance containing the trading history.
             bar_size (str): The time interval of each bar in the data, supported units
-                are 'S' for seconds, 'M' for minutes, 'H' for hours and 'D' for days
+                are 'S' for seconds, 'T' for minutes, 'H' for hours and 'D' for days
                 (default is "1D").
         """
 
         value = int(bar_size[:-1])
         unit = bar_size[-1]
-        seconds_multiplier = {"S": 1, "M": 60, "H": 3600, "D": 3600 * 6.5}
+        seconds_multiplier = {"S": 1, "T": 60, "H": 3600, "D": 3600 * 6.5}
         if unit not in seconds_multiplier:
             raise ValueError(f"Unsupported bar size unit: {unit}")
         self.seconds_per_bar = value * seconds_multiplier[unit]
@@ -280,14 +280,14 @@ class Analyzer:
             **kwargs(Dict[str, Any]): Additional keyword arguments to pass to the plot
                 function of pandas.
         """
-        columns_to_plot = ["date", "drawdown"]
+        columns_to_plot = ["timestamp", "drawdown"]
         if "benchmark_drawdown" in self.analysis_df.columns:
             columns_to_plot.append("benchmark_drawdown")
 
         self.analysis_df.loc[:, columns_to_plot].plot(
-            x="date",
+            x="timestamp",
             title="Portfolio Drawdown Over Time",
-            xlabel="Date",
+            xlabel="Timestamp",
             ylabel="Drawdown %",
             **kwargs,
         )
@@ -299,7 +299,7 @@ class Analyzer:
         This method creates a line plot showing the portfolio's cash, total value, and
         benchmark over time for comparison. If the benchmark is not available, it will
         plot only the available columns. If logy is True, the cash column will be
-        excluded, to focus on the total value and benchmark on logaritmic scale.
+        excluded, to focus on the total value and benchmark on logarithmic scale.
 
         Parameters:
             logy (bool): If True, use a logarithmic scale for the y-axis and exclude the
@@ -307,16 +307,16 @@ class Analyzer:
             **kwargs(Dict[str, Any]): Additional keyword arguments to pass to the plot
                 function of pandas.
         """
-        columns_to_plot = ["date", "total_value"]
+        columns_to_plot = ["timestamp", "total_value"]
         if "benchmark" in self.analysis_df.columns:
             columns_to_plot.append("benchmark")
         if not logy:
             columns_to_plot.append("cash")
 
         self.analysis_df.loc[:, columns_to_plot].plot(
-            x="date",
+            x="timestamp",
             title="Portfolio Equity Curve Over Time",
-            xlabel="Date",
+            xlabel="Timestamp",
             ylabel="Value",
             logy=logy,
             **kwargs,

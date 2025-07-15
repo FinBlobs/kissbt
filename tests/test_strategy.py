@@ -7,7 +7,7 @@ from kissbt.strategy import Strategy
 
 class DummyStrategy(Strategy):
     def generate_orders(
-        self, current_data: pd.DataFrame, current_datetime: pd.Timestamp
+        self, current_data: pd.DataFrame, current_timestamp: pd.Timestamp
     ) -> None:
         for ticker in current_data.index:
             if current_data.loc[ticker, "close"] > 100:

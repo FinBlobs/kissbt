@@ -49,7 +49,7 @@ class Strategy(ABC):
     def generate_orders(
         self,
         current_data: pd.DataFrame,
-        current_datetime: pd.Timestamp,
+        current_timestamp: pd.Timestamp,
     ) -> None:
         """
         Generate trading orders based on current market data and indicators.
@@ -71,7 +71,7 @@ class Strategy(ABC):
                 - volume: Trading volume
                 - [custom]: Any additional indicators added during data preparation
 
-            current_datetime: Timestamp of the current bar, e.g. used for order timing
+            current_timestamp: Timestamp of the current bar, e.g. used for order timing
 
         Returns:
             None
@@ -80,7 +80,7 @@ class Strategy(ABC):
             - Orders are placed through the _broker instance using methods like:
               create_market_order(), create_limit_order()
             - Position and portfolio information can be accessed through the _broker
-            - Avoid look-ahead bias by only using data available at current_datetime
+            - Avoid look-ahead bias by only using data available at current_timestamp
             - All orders are processed at the next bar's prices (which price depends on
               the order type)
 
