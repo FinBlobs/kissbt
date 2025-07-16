@@ -33,9 +33,12 @@ def tech_stock_data():
         # Clean up column names
         df.columns = df.columns.str.lower()
         df.columns.name = None
+        df = df.rename(columns={"date": "timestamp"})
 
         # Sort and set multi-index
-        df = df.sort_values(by=["date", "ticker"]).set_index(["date", "ticker"])
+        df = df.sort_values(by=["timestamp", "ticker"]).set_index(
+            ["timestamp", "ticker"]
+        )
 
         # Compute rolling means
         df["sma_128"] = df.groupby("ticker")["close"].transform(

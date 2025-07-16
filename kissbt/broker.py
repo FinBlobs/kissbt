@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -24,7 +23,7 @@ class Broker:
     Typical usage:
         broker = Broker(start_capital=100000, fees=0.001)
         broker.place_order(Order("AAPL", 100, OrderType.OPEN))
-        broker.update(next_bar, next_datetime)
+        broker.update(next_bar, next_timestamp)
     """
 
     def __init__(
@@ -64,9 +63,9 @@ class Broker:
         self._open_orders: List[Order] = []
 
         self._current_bar: pd.DataFrame = pd.DataFrame()
-        self._current_datetime: Optional[datetime] = None
+        self._current_timestamp: Optional[pd.Timestamp] = None
         self._previous_bar: pd.DataFrame = pd.DataFrame()
-        self._previous_datetime: Optional[datetime] = None
+        self._previous_timestamp: Optional[pd.Timestamp] = None
 
         self._long_only = long_only
         self._short_fee_rate = short_fee_rate
@@ -75,8 +74,8 @@ class Broker:
         self._benchmark = benchmark
         self._benchmark_size = 0.0
 
-        self._history: Dict[str, List[float]] = {
-            "date": [],
+        self._history: Dict[str, List[float | int | pd.Timestamp]] = {
+            "timestamp": [],
             "cash": [],
             "long_position_value": [],
             "short_position_value": [],
@@ -90,7 +89,7 @@ class Broker:
         """
         Updates the history dictionary with the current portfolio state.
         """
-        self._history["date"].append(self._current_datetime)
+        self._history["timestamp"].append(self._current_timestamp)
         self._history["cash"].append(self._cash)
         self._history["long_position_value"].append(self.long_position_value)
         self._history["short_position_value"].append(self.short_position_value)
@@ -164,7 +163,7 @@ class Broker:
             raise ValueError(f"Unknown order type {order.order_type}")
 
     def _update_closed_positions(
-        self, ticker: str, size: float, price: float, datetime: datetime
+        self, ticker: str, size: float, price: float, timestamp: pd.Timestamp
     ):
         """
         Updates the list of closed positions for a given trade.
@@ -178,7 +177,7 @@ class Broker:
             ticker (str): The ticker symbol of the position
             size (float): Position size (positive for long, negative for short)
             price (float): The current closing/reduction price
-            datetime (datetime): Timestamp of the closing/reduction
+            timestamp (timestamp): Timestamp of the closing/reduction
         """
         if (
             ticker in self._open_positions
@@ -191,9 +190,9 @@ class Broker:
                         self._open_positions[ticker].ticker,
                         min(self._open_positions[ticker].size, abs(size)),
                         self._open_positions[ticker].price,
-                        self._open_positions[ticker].datetime,
+                        self._open_positions[ticker].timestamp,
                         price,
-                        datetime,
+                        timestamp,
                     ),
                 )
             # if short position is closed/reduced
@@ -203,20 +202,20 @@ class Broker:
                         self._open_positions[ticker].ticker,
                         max(self._open_positions[ticker].size, -size),
                         price,
-                        datetime,
+                        timestamp,
                         self._open_positions[ticker].price,
-                        self._open_positions[ticker].datetime,
+                        self._open_positions[ticker].timestamp,
                     ),
                 )
 
     def _update_open_positions(
-        self, ticker: str, size: float, price: float, datetime: datetime
+        self, ticker: str, size: float, price: float, timestamp: pd.Timestamp
     ):
         """
         Updates the open positions for a given ticker.
 
         If the ticker already exists in the open positions, it updates the size, price,
-        and datetime based on the new transaction. If the size of the position becomes
+        and timestamp based on the new transaction. If the size of the position becomes
         zero, the position is removed. If the ticker does not exist, a new open position
         is created.
 
@@ -224,7 +223,8 @@ class Broker:
             ticker (str): The ticker symbol of the asset.
             size (float): The size of the position.
             price (float): The price at which the position was opened or updated.
-            datetime (datetime): The datetime when the position was opened or updated.
+            timestamp (Timestamp): The timestamp when the position was opened or
+                updated.
         """
         if ticker in self._open_positions:
             if size + self._open_positions[ticker].size == 0.0:
@@ -232,7 +232,7 @@ class Broker:
             else:
                 open_position_size = self._open_positions[ticker].size + size
                 open_position_price = price
-                open_position_datetime = datetime
+                open_position_timestamp = timestamp
 
                 if size * self._open_positions[ticker].size > 0.0:
                     open_position_price = (
@@ -240,22 +240,22 @@ class Broker:
                         * self._open_positions[ticker].price
                         + size * price
                     ) / (self._open_positions[ticker].size + size)
-                    open_position_datetime = self._open_positions[ticker].datetime
+                    open_position_timestamp = self._open_positions[ticker].timestamp
                 elif abs(self._open_positions[ticker].size) > abs(size):
-                    open_position_datetime = self._open_positions[ticker].datetime
+                    open_position_timestamp = self._open_positions[ticker].timestamp
                     open_position_price = self._open_positions[ticker].price
                 self._open_positions[ticker] = OpenPosition(
                     ticker,
                     open_position_size,
                     open_position_price,
-                    open_position_datetime,
+                    open_position_timestamp,
                 )
         else:
             self._open_positions[ticker] = OpenPosition(
                 ticker,
                 size,
                 price,
-                datetime,
+                timestamp,
             )
 
     def _update_cash(self, order: Order, price: float):
@@ -272,29 +272,29 @@ class Broker:
         else:
             self._cash -= order.size * price * (1.0 - self._fees)
 
-    def _check_long_only_condition(self, order: Order, datetime: datetime):
+    def _check_long_only_condition(self, order: Order, timestamp: pd.Timestamp):
         size = order.size
         if order.ticker in self._open_positions:
             size += self._open_positions[order.ticker].size
 
         if size < 0.0:
             raise ValueError(
-                f"Short selling is not allowed for {order.ticker} on {datetime}."
+                f"Short selling is not allowed for {order.ticker} on {timestamp}."
             )
 
     def _execute_order(
         self,
         order: Order,
         bar: pd.DataFrame,
-        datetime: datetime,
+        timestamp: pd.Timestamp,
     ) -> bool:
         """
-        Executes an order based on the provided bar data and datetime.
+        Executes an order based on the provided bar data and timestamp.
 
         Args:
             order (Order): The order to be executed.
             bar (pd.DataFrame): The bar data containing price information.
-            datetime (datetime): The datetime at which the order is executed.
+            timestamp (Timestamp): The timestamp at which the order is executed.
 
         Returns:
             bool: True if the order was successfully executed, False otherwise.
@@ -308,7 +308,7 @@ class Broker:
             return False
 
         if self._long_only:
-            self._check_long_only_condition(order, datetime)
+            self._check_long_only_condition(order, timestamp)
 
         price = self._get_price_for_order(order, bar)
 
@@ -319,16 +319,16 @@ class Broker:
         # update cash for long and short positions
         self._update_cash(order, price)
 
-        self._update_closed_positions(ticker, order.size, price, datetime)
+        self._update_closed_positions(ticker, order.size, price, timestamp)
 
-        self._update_open_positions(ticker, order.size, price, datetime)
+        self._update_open_positions(ticker, order.size, price, timestamp)
 
         return True
 
     def update(
         self,
         next_bar: pd.DataFrame,
-        next_datetime: pd.Timestamp,
+        next_timestamp: pd.Timestamp,
     ):
         """
         Updates the broker's state with the next trading bar and executes pending
@@ -344,7 +344,7 @@ class Broker:
         Args:
             next_bar (pd.DataFrame): The next trading bar data containing at minimum
                 'close' prices for assets
-            next_datetime (pd.Timestamp): The timestamp for the next trading bar
+            next_timestamp (pd.Timestamp): The timestamp for the next trading bar
 
         Notes:
             - Short fees are calculated using the current bar's closing price
@@ -354,9 +354,9 @@ class Broker:
             - Good-till-cancel orders that aren't filled are retained for the next bar
         """
         self._previous_bar = self._current_bar
-        self._previous_datetime = self._current_datetime
+        self._previous_timestamp = self._current_timestamp
         self._current_bar = next_bar
-        self._current_datetime = next_datetime
+        self._current_timestamp = next_timestamp
 
         # consider short fees
         if not self._long_only:
@@ -384,7 +384,7 @@ class Broker:
                 self._execute_order(
                     Order(ticker, -self._open_positions[ticker].size, OrderType.CLOSE),
                     self._previous_bar,
-                    cast(datetime, self._previous_datetime),
+                    self._previous_timestamp,
                 )
 
         # buy and sell assets
@@ -396,18 +396,18 @@ class Broker:
             if open_order.ticker in ticker_not_available:
                 if open_order.size > 0:
                     print(
-                        f"{open_order.ticker} could not be bought on {self._current_datetime}."  # noqa: E501
+                        f"{open_order.ticker} could not be bought on {self._current_timestamp}."  # noqa: E501
                     )
                 else:
                     print(
-                        f"{open_order.ticker} could not be sold on {self._current_datetime}."  # noqa: E501
+                        f"{open_order.ticker} could not be sold on {self._current_timestamp}."  # noqa: E501
                     )
                 continue
             if (
                 not self._execute_order(
                     open_order,
                     self._current_bar,
-                    cast(datetime, self._current_datetime),
+                    self._current_timestamp,
                 )
                 and open_order.good_till_cancel
             ):
@@ -439,7 +439,7 @@ class Broker:
             self._execute_order(
                 Order(ticker, -self._open_positions[ticker].size, OrderType.CLOSE),
                 self._current_bar,
-                self._current_datetime,
+                self._current_timestamp,
             )
 
     def place_order(self, order: Order):
@@ -524,7 +524,7 @@ class Broker:
         - ticker: Financial instrument identifier
         - size: Position size (positive=long, negative=short)
         - price: Average entry price
-        - datetime: Position opening timestamp
+        - timestamp: Position opening timestamp
 
         Returns:
             Dict[str, OpenPosition]: Dictionary mapping ticker symbols to positions.

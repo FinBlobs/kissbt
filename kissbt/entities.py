@@ -39,13 +39,13 @@ class OpenPosition:
         ticker (str): Financial instrument identifier
         size (float): Position size (positive for long, negative for short)
         price (float): Opening price of the position
-        datetime (datetime): Position opening timestamp
+        timestamp (pd.Timestamp): Position opening timestamp
     """
 
     ticker: str
     size: float
     price: float
-    datetime: pd.Timestamp
+    timestamp: pd.Timestamp
 
 
 @dataclass(frozen=True)
@@ -57,14 +57,14 @@ class ClosedPosition:
         ticker (str): Financial instrument identifier
         size (float): Position size (positive for long, negative for short)
         purchase_price (float): Entry price of the position
-        purchase_datetime (pd.Timestamp): Position entry timestamp
+        purchase_timestamp (pd.Timestamp): Position entry timestamp
         selling_price (float): Exit price of the position
-        selling_datetime (pd.Timestamp): Position exit timestamp
+        selling_timestamp (pd.Timestamp): Position exit timestamp
     """
 
     ticker: str
     size: float
     purchase_price: float
-    purchase_datetime: pd.Timestamp
+    purchase_timestamp: pd.Timestamp
     selling_price: float
-    selling_datetime: pd.Timestamp
+    selling_timestamp: pd.Timestamp

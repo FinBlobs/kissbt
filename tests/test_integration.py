@@ -14,7 +14,7 @@ class GoldenCrossStrategy(Strategy):
     def generate_orders(
         self,
         current_data: pd.DataFrame,
-        current_date: pd.Timestamp,
+        current_timestamp: pd.Timestamp,
     ) -> None:
         for ticker in self._broker.open_positions:
             if (
