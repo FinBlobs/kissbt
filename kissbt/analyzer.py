@@ -15,7 +15,13 @@ class Analyzer:
     key metrics used in financial analysis and portfolio management.
     """
 
-    def __init__(self, broker: Broker, bar_size: str = "1D") -> None:
+    def __init__(
+        self,
+        broker: Broker,
+        bar_size: str = "1D",
+        trading_hours_per_day: float = 6.5,
+        trading_days_per_year: int = 252,
+    ) -> None:
         """
         Initialize the Analyzer with a Broker instance and the bar size, which is the
         time interval of each bar in the data.
@@ -25,15 +31,27 @@ class Analyzer:
             bar_size (str): The time interval of each bar in the data, supported units
                 are 'S' for seconds, 'T' for minutes, 'H' for hours and 'D' for days
                 (default is "1D").
+            trading_hours_per_day (float): Number of trading hours per day (default is
+                6.5, which assumes US equities market hours; adjust as needed for other
+                markets).
+            trading_days_per_year (int): Number of trading days per year (default is
+                252, which assumes US equities; adjust as needed for other markets).
         """
 
         value = int(bar_size[:-1])
-        unit = bar_size[-1]
-        seconds_multiplier = {"S": 1, "T": 60, "H": 3600, "D": 3600 * 6.5}
-        if unit not in seconds_multiplier:
-            raise ValueError(f"Unsupported bar size unit: {unit}")
-        self.seconds_per_bar = value * seconds_multiplier[unit]
-        self.trading_seconds_per_year = 252 * 6.5 * 3600
+        bar_unit = bar_size[-1]
+        seconds_multiplier = {
+            "S": 1,
+            "T": 60,
+            "H": 3600,
+            "D": 3600 * trading_hours_per_day,
+        }
+        if bar_unit not in seconds_multiplier:
+            raise ValueError(f"Unsupported bar size unit: {bar_unit}")
+        self.seconds_per_bar = value * seconds_multiplier[bar_unit]
+        self.trading_seconds_per_year = (
+            trading_days_per_year * trading_hours_per_day * 3600
+        )
 
         self.broker = broker
         self.analysis_df = pd.DataFrame(self.broker.history)
@@ -321,3 +339,38 @@ class Analyzer:
             logy=logy,
             **kwargs,
         )
+
+    def plot_rolling_returns_distribution(
+        self, window_bars: int, include_benchmark: bool = True, **kwargs: dict
+    ) -> None:
+        """
+        Plot box plots of rolling returns for the portfolio and optionally benchmark.
+
+        Parameters:
+            window_bars (int): Window size as number of bars.
+            include_benchmark (bool): Whether to include benchmark if available
+                (default True).
+            **kwargs (dict): Additional keyword arguments to pass to the pandas
+                DataFrame.boxplot function for customizing the appearance and behavior
+                of the box plot.
+        """
+        if window_bars > len(self.analysis_df):
+            raise ValueError(
+                f"Window size {window_bars} is too large for the available data {len(self.analysis_df)}."  # noqa: E501
+            )
+
+        result = {
+            "Portfolio": self.analysis_df["total_value"]
+            .pct_change(periods=window_bars)
+            .dropna()
+            .reset_index(drop=True)
+        }
+        if include_benchmark and "benchmark" in self.analysis_df.columns:
+            result["Benchmark"] = (
+                self.analysis_df["benchmark"]
+                .pct_change(periods=window_bars)
+                .dropna()
+                .reset_index(drop=True)
+            )
+
+        pd.DataFrame(result).boxplot(**kwargs)
