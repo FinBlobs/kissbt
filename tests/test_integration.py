@@ -104,3 +104,4 @@ def test_analyzer_with_golden_cross(tech_stock_data):
     # Ensure running the plot functions does not raise an exception
     analyzer.plot_equity_curve()
     analyzer.plot_drawdowns()
+    analyzer.plot_rolling_returns_distribution(252)

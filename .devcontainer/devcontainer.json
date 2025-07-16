@@ -25,7 +25,6 @@
         },
         "ruff.enable": true,
         "ruff.organizeImports": true,
-        "python.analysis.typeCheckingMode": "strict",
         "python.analysis.autoImportCompletions": true,
         "python.analysis.indexing": true,
         "mypy.enabled": true,
