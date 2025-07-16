@@ -354,7 +354,7 @@ class Analyzer:
                 DataFrame.boxplot function for customizing the appearance and behavior
                 of the box plot.
         """
-        if window_bars > len(self.analysis_df):
+        if window_bars >= len(self.analysis_df):
             raise ValueError(
                 f"Window size {window_bars} is too large for the available data {len(self.analysis_df)}."  # noqa: E501
             )
