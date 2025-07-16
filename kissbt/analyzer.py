@@ -341,7 +341,7 @@ class Analyzer:
         )
 
     def plot_rolling_returns_distribution(
-        self, window_bars: int, include_benchmark: bool = True, **kwargs: dict
+        self, window_bars: int, include_benchmark: bool = True, **kwargs: Dict[str, Any]
     ) -> None:
         """
         Plot box plots of rolling returns for the portfolio and optionally benchmark.
