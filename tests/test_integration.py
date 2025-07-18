@@ -98,8 +98,8 @@ def test_analyzer_with_golden_cross(tech_stock_data):
     assert pytest.approx(metrics["volatility"], abs=0.01) == 0.24
     assert pytest.approx(metrics["win_rate"], abs=0.01) == 0.47
     assert pytest.approx(metrics["profit_factor"], abs=0.01) == 3.17
-    assert pytest.approx(metrics["total_benchmark_return"], abs=0.01) == 0.29
-    assert pytest.approx(metrics["annual_benchmark_return"], abs=0.01) == 0.09
+    assert pytest.approx(metrics["benchmark_total_return"], abs=0.01) == 0.29
+    assert pytest.approx(metrics["benchmark_annual_return"], abs=0.01) == 0.09
 
     # Ensure running the plot functions does not raise an exception
     analyzer.plot_equity_curve()
