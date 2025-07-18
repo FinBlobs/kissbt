@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 
 from kissbt.broker import Broker
 
@@ -68,6 +69,52 @@ class Analyzer:
                 self.analysis_df["benchmark"].cummax() - self.analysis_df["benchmark"]
             ) / self.analysis_df["benchmark"].cummax()
 
+    def _equity_curve_stats(
+        self,
+        value_series: pd.Series,
+        *,
+        prefix: str = "",
+    ) -> Dict[str, float]:
+        """
+        Calculate statistics of the equity curve based on the log-equity curve.
+        This method performs a linear regression on the log-equity curve to estimate
+        the slope, standard error, t-statistic, and R² value.
+
+        - slope: The slope of the log-equity curve, indicating the average return per
+            bar.
+        - slope_se: The standard error of the slope, indicating the variability of the
+            average return.
+        - slope_tstat: The t-statistic of the slope, indicating how strongly the data
+            supports the presence of a non-zero trend in the log-equity curve.
+        - r_squared: The R² value of the regression, indicating the proportion of
+            variance explained.
+
+        Parameters:
+            value_series (pd.Series): The series of values to analyze, typically the
+                total value of the portfolio or benchmark.
+            prefix (str): A prefix to add to the keys in the returned dictionary, useful
+                for distinguishing between portfolio and benchmark statistics.
+        """
+
+        if (value_series <= 0).any():
+            raise ValueError(
+                "Value series contains non-positive values, cannot compute log-based statistics"  # noqa: E501
+            )
+        y = np.log(value_series.to_numpy())
+        x = np.arange(y.size, dtype=float)
+
+        res = linregress(x, y)
+        slope, slope_se, r_squared = res.slope, res.stderr, res.rvalue**2
+
+        slope_tstat = slope / slope_se
+
+        return {
+            f"{prefix}slope": slope,
+            f"{prefix}slope_se": slope_se,
+            f"{prefix}slope_tstat": slope_tstat,
+            f"{prefix}r_squared": r_squared,
+        }
+
     def get_performance_metrics(self) -> Dict[str, float]:
         """
         Calculate and return key performance metrics of the trading strategy.
@@ -85,9 +132,26 @@ class Analyzer:
         - profit_factor: The profit factor of the trading strategy, a ratio of gross
             profits to gross losses.
 
-        If a benchmark is available in the data, the dictionary also includes:
-        - total_benchmark_return: The total return of the benchmark as a decimal.
-        - annual_benchmark_return: The annualized return of the benchmark as a decimal.
+        Additionally we compute the equity curve statistics for the portfolio's
+        total value, including:
+        - slope: The slope of the log-equity curve, indicating the average return per
+            bar.
+        - slope_se: The standard error of the slope, indicating the variability of the
+            average return.
+        - slope_tstat: The t-statistic of the slope (slope / slope_se), indicating how
+            strongly the data supports the presence of a non-zero trend in the
+            log-equity curve. A larger absolute value (positive or negative) provides
+            stronger evidence against H_0 (β = 0), suggesting that the observed trend is
+            unlikely to be due to random fluctuations. For typical backtests the
+            t-statistic approximately follows a standard normal distribution. Values
+            above +1.96 or below -1.96 are considered statistically significant at the
+            95% confidence level.
+        - r_squared: The R² value of the regression, indicating the proportion of
+            variance explained by the model.
+
+        If a benchmark is available in the data, the dictionary also includes the
+        total_return, annual_return, slope, slope_se, slope_tstat and r_squared for the
+        benchmark, prefixed with "benchmark_".
 
         Returns:
             Dict[str, float]: A dictionary containing the calculated performance
@@ -103,13 +167,20 @@ class Analyzer:
             "win_rate": self._calculate_win_rate(),
             "profit_factor": self._calculate_profit_factor(),
         }
+        metrics.update(self._equity_curve_stats(self.analysis_df["total_value"]))
 
         if "benchmark" in self.analysis_df.columns:
-            metrics["total_benchmark_return"] = self._calculate_total_return(
+            metrics["benchmark_total_return"] = self._calculate_total_return(
                 "benchmark"
             )
-            metrics["annual_benchmark_return"] = self._calculate_annual_return(
+            metrics["benchmark_annual_return"] = self._calculate_annual_return(
                 "benchmark"
+            )
+            metrics.update(
+                self._equity_curve_stats(
+                    self.analysis_df["benchmark"],
+                    prefix="benchmark_",
+                )
             )
 
         return metrics
