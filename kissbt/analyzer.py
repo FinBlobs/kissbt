@@ -101,8 +101,7 @@ class Analyzer:
                 "Value series contains non-positive values, cannot compute log-based statistics"  # noqa: E501
             )
         y = np.log(value_series.to_numpy())
-        n = y.size
-        x = np.arange(n, dtype=float)
+        x = np.arange(y.size, dtype=float)
 
         res = linregress(x, y)
         slope, slope_se, r_squared = res.slope, res.stderr, res.rvalue**2
