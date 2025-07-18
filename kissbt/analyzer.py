@@ -150,8 +150,8 @@ class Analyzer:
             variance explained by the model.
 
         If a benchmark is available in the data, the dictionary also includes the
-        total_return, annual_return, slope, slope_se, r_squared, k_ratio_raw, and
-        k_ratio_adj for the benchmark, prefixed with "benchmark_".
+        total_return, annual_return, slope, slope_se, slope_tstat and r_squared for the
+        benchmark, prefixed with "benchmark_".
 
         Returns:
             Dict[str, float]: A dictionary containing the calculated performance
