@@ -15,7 +15,7 @@ def test_constant_growth_benchmark_stats():
     for i, val in enumerate(values):
         ts = pd.Timestamp("2023-01-01") + pd.Timedelta(days=i)
         broker.history["timestamp"].append(ts)
-        broker.history["total_value"].append(100000)
+        broker.history["total_value"].append(start_value)
         broker.history["benchmark"].append(val)
         broker.history["cash"].append(0)
         broker.history["long_position_value"].append(0)
