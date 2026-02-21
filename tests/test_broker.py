@@ -143,6 +143,41 @@ def test_execute_order_close(broker):
     assert len(broker.closed_positions) == 1
 
 
+def test_execute_order_close_short_records_profitable_trade_correctly():
+    broker = Broker(start_capital=100000, fees=0.0, long_only=False, short_fee_rate=0.02)
+    entry_time = pd.Timestamp("2024-01-01")
+    exit_time = pd.Timestamp("2024-01-02")
+
+    # Open short at 100 and close at 90.
+    broker._execute_order(
+        Order("AAPL", -10, OrderType.OPEN),
+        pd.DataFrame(
+            {"open": [100.0], "close": [100.0], "high": [101.0], "low": [99.0]},
+            index=["AAPL"],
+        ),
+        entry_time,
+    )
+    broker._execute_order(
+        Order("AAPL", 10, OrderType.CLOSE),
+        pd.DataFrame(
+            {"open": [90.0], "close": [90.0], "high": [91.0], "low": [89.0]},
+            index=["AAPL"],
+        ),
+        exit_time,
+    )
+
+    assert len(broker.closed_positions) == 1
+    closed_position = broker.closed_positions[0]
+    assert closed_position.size == -10
+    assert closed_position.purchase_price == 100.0
+    assert closed_position.purchase_timestamp == entry_time
+    assert closed_position.selling_price == 90.0
+    assert closed_position.selling_timestamp == exit_time
+    assert (
+        closed_position.selling_price - closed_position.purchase_price
+    ) * closed_position.size > 0.0
+
+
 def test_place_multiple_orders(broker):
     order1 = Order("AAPL", 10, OrderType.OPEN)
     order2 = Order("GOOG", 5, OrderType.OPEN)

@@ -199,10 +199,10 @@ class Broker:
                     ClosedPosition(
                         self._open_positions[ticker].ticker,
                         max(self._open_positions[ticker].size, -size),
-                        price,
-                        timestamp,
                         self._open_positions[ticker].price,
                         self._open_positions[ticker].timestamp,
+                        price,
+                        timestamp,
                     ),
                 )
 
