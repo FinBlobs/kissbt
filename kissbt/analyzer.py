@@ -106,7 +106,11 @@ class Analyzer:
         res = linregress(x, y)
         slope, slope_se, r_squared = res.slope, res.stderr, res.rvalue**2
 
-        slope_tstat = slope / slope_se
+        eps = np.finfo(float).eps
+        if slope_se <= eps:
+            slope_tstat = np.inf if slope > 0 else (-np.inf if slope < 0 else 0.0)
+        else:
+            slope_tstat = slope / slope_se
 
         return {
             f"{prefix}slope": slope,
