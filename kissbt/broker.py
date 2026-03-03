@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 import pandas as pd
 
 from kissbt.entities import ClosedPosition, OpenPosition, Order, OrderType
@@ -32,7 +30,7 @@ class Broker:
         fees: float = 0.001,
         long_only: bool = True,
         short_fee_rate: float = 0.0050,
-        benchmark: Optional[str] = None,
+        benchmark: str | None = None,
     ):
         """
         Initialize the Broker.
@@ -58,14 +56,14 @@ class Broker:
         self._start_capital = start_capital
         self._fees = fees
 
-        self._open_positions: Dict[str, OpenPosition] = dict()
-        self._closed_positions: List[ClosedPosition] = []
-        self._open_orders: List[Order] = []
+        self._open_positions: dict[str, OpenPosition] = {}
+        self._closed_positions: list[ClosedPosition] = []
+        self._open_orders: list[Order] = []
 
         self._current_bar: pd.DataFrame = pd.DataFrame()
-        self._current_timestamp: Optional[pd.Timestamp] = None
+        self._current_timestamp: pd.Timestamp | None = None
         self._previous_bar: pd.DataFrame = pd.DataFrame()
-        self._previous_timestamp: Optional[pd.Timestamp] = None
+        self._previous_timestamp: pd.Timestamp | None = None
 
         self._long_only = long_only
         self._short_fee_rate = short_fee_rate
@@ -74,7 +72,7 @@ class Broker:
         self._benchmark = benchmark
         self._benchmark_size = 0.0
 
-        self._history: Dict[str, List[float | int | pd.Timestamp]] = {
+        self._history: dict[str, list[float | int | pd.Timestamp]] = {
             "timestamp": [],
             "cash": [],
             "long_position_value": [],
@@ -141,7 +139,7 @@ class Broker:
                       high price >= limit
         """
         ticker = order.ticker
-        if order.order_type == OrderType.OPEN or order.order_type == OrderType.CLOSE:
+        if order.order_type in {OrderType.OPEN, OrderType.CLOSE}:
             col = "open" if order.order_type == OrderType.OPEN else "close"
             if order.limit is None:
                 return bar.loc[ticker, col]
@@ -517,7 +515,7 @@ class Broker:
         return self._cash + self.long_position_value + self.short_position_value
 
     @property
-    def open_positions(self) -> Dict[str, OpenPosition]:
+    def open_positions(self) -> dict[str, OpenPosition]:
         """Gets a dictionary of currently active trading positions.
 
         Maps ticker symbols to OpenPosition objects containing:
@@ -533,7 +531,7 @@ class Broker:
         return self._open_positions.copy()
 
     @property
-    def closed_positions(self) -> List[ClosedPosition]:
+    def closed_positions(self) -> list[ClosedPosition]:
         """
         Gets a list of all completed trades.
 
@@ -551,7 +549,7 @@ class Broker:
         return self._closed_positions.copy()
 
     @property
-    def history(self) -> Dict[str, List[float]]:
+    def history(self) -> dict[str, list[float]]:
         """Gets the historical performance metrics dictionary.
 
         Contains time series data tracking portfolio metrics:
@@ -580,7 +578,7 @@ class Broker:
         return self._cash
 
     @property
-    def benchmark(self) -> Optional[str]:
+    def benchmark(self) -> str | None:
         """Gets the benchmark symbol used for performance comparison.
 
         The benchmark tracks a reference asset (e.g., market index) to evaluate relative

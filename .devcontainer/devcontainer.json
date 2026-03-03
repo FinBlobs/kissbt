@@ -1,7 +1,10 @@
 {
   "name": "kissbt dev",
   "image": "mcr.microsoft.com/devcontainers/python:3.13",
-  "postCreateCommand": "pip install -e .[dev]",
+  "features": {
+    "ghcr.io/astral-sh/uv:latest": {}
+  },
+  "postCreateCommand": "uv sync --extra dev --frozen",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -14,7 +17,7 @@
         "ms-python.mypy-type-checker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.formatOnSave": true,

@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
@@ -74,7 +72,7 @@ class Analyzer:
         value_series: pd.Series,
         *,
         prefix: str = "",
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate statistics of the equity curve based on the log-equity curve.
         This method performs a linear regression on the log-equity curve to estimate
@@ -106,7 +104,11 @@ class Analyzer:
         res = linregress(x, y)
         slope, slope_se, r_squared = res.slope, res.stderr, res.rvalue**2
 
-        slope_tstat = slope / slope_se
+        eps = np.finfo(float).eps
+        if slope_se <= eps:
+            slope_tstat = np.inf if slope > 0 else (-np.inf if slope < 0 else 0.0)
+        else:
+            slope_tstat = slope / slope_se
 
         return {
             f"{prefix}slope": slope,
@@ -115,7 +117,7 @@ class Analyzer:
             f"{prefix}r_squared": r_squared,
         }
 
-    def get_performance_metrics(self) -> Dict[str, float]:
+    def get_performance_metrics(self) -> dict[str, float]:
         """
         Calculate and return key performance metrics of the trading strategy.
 
@@ -357,7 +359,7 @@ class Analyzer:
         )
         return float(profits / losses) if losses != 0 else float("inf")
 
-    def plot_drawdowns(self, **kwargs: Dict[str, Any]) -> None:
+    def plot_drawdowns(self, **kwargs: object) -> None:
         """
         Plot the drawdown over time for both the portfolio and benchmark (if available).
 
@@ -381,7 +383,7 @@ class Analyzer:
             **kwargs,
         )
 
-    def plot_equity_curve(self, logy: bool = False, **kwargs: Dict[str, Any]) -> None:
+    def plot_equity_curve(self, logy: bool = False, **kwargs: object) -> None:
         """
         Plot the portfolio's cash, total value, and benchmark (if available) over time.
 
@@ -412,7 +414,10 @@ class Analyzer:
         )
 
     def plot_rolling_returns_distribution(
-        self, window_bars: int, include_benchmark: bool = True, **kwargs: Dict[str, Any]
+        self,
+        window_bars: int,
+        include_benchmark: bool = True,
+        **kwargs: object,
     ) -> None:
         """
         Plot box plots of rolling returns for the portfolio and optionally benchmark.
