@@ -183,6 +183,52 @@ def test_execute_order_close_short_records_profitable_trade_correctly():
     ) * closed_position.size > 0.0
 
 
+def test_execute_order_partial_close_short_records_trade_and_remaining_position():
+    broker = Broker(
+        start_capital=100000,
+        fees=0.0,
+        long_only=False,
+        short_fee_rate=0.02,
+    )
+    entry_time = pd.Timestamp("2024-01-01")
+    partial_close_time = pd.Timestamp("2024-01-02")
+
+    broker._execute_order(
+        Order("AAPL", -10, OrderType.OPEN),
+        pd.DataFrame(
+            {"open": [100.0], "close": [100.0], "high": [101.0], "low": [99.0]},
+            index=["AAPL"],
+        ),
+        entry_time,
+    )
+    broker._execute_order(
+        Order("AAPL", 5, OrderType.CLOSE),
+        pd.DataFrame(
+            {"open": [90.0], "close": [90.0], "high": [91.0], "low": [89.0]},
+            index=["AAPL"],
+        ),
+        partial_close_time,
+    )
+
+    assert len(broker.closed_positions) == 1
+    closed_position = broker.closed_positions[0]
+    assert closed_position.ticker == "AAPL"
+    assert closed_position.size == -5
+    assert closed_position.purchase_price == 100.0
+    assert closed_position.purchase_timestamp == entry_time
+    assert closed_position.selling_price == 90.0
+    assert closed_position.selling_timestamp == partial_close_time
+    assert (
+        closed_position.selling_price - closed_position.purchase_price
+    ) * closed_position.size > 0.0
+
+    assert "AAPL" in broker.open_positions
+    remaining_position = broker.open_positions["AAPL"]
+    assert remaining_position.size == -5
+    assert remaining_position.price == 100.0
+    assert remaining_position.timestamp == entry_time
+
+
 def test_place_multiple_orders(broker):
     order1 = Order("AAPL", 10, OrderType.OPEN)
     order2 = Order("GOOG", 5, OrderType.OPEN)
