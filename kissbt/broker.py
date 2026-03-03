@@ -167,9 +167,9 @@ class Broker:
         Updates the list of closed positions for a given trade.
 
         Updates closed positions tracking when a position is fully or partially closed.
-        For long positions being closed, records the entry price from open position and
-        exit at current price. For short positions being closed, records entry at
-        current price and exit at open position price.
+        For long and short positions being closed, records the entry price and
+        timestamp from the open position and the exit price and timestamp from the
+        current close/reduction.
 
         Args:
             ticker (str): The ticker symbol of the position

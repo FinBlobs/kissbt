@@ -144,7 +144,12 @@ def test_execute_order_close(broker):
 
 
 def test_execute_order_close_short_records_profitable_trade_correctly():
-    broker = Broker(start_capital=100000, fees=0.0, long_only=False, short_fee_rate=0.02)
+    broker = Broker(
+        start_capital=100000,
+        fees=0.0,
+        long_only=False,
+        short_fee_rate=0.02,
+    )
     entry_time = pd.Timestamp("2024-01-01")
     exit_time = pd.Timestamp("2024-01-02")
 
