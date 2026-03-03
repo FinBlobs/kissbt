@@ -10,49 +10,42 @@ from kissbt.broker import Broker
 @pytest.fixture(scope="session")
 def tech_stock_data():
     """
-    Fixture that loads tech stock price data (magnificent 7 + SPY as benachmark),
-    downloading it if necessary.
+    Load tech stock data (magnificent 7 + SPY benchmark) from parquet when
+    available, otherwise fetch once from Yahoo Finance and cache to parquet.
     """
-    TICKERS = ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA", "TSLA", "META", "SPY"]
-    START_DATE = "2020-01-01"
-    END_DATE = "2024-12-31"
-    DATA_PATH = "tests/data/tech_stocks.parquet"
+    tickers = ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA", "TSLA", "META", "SPY"]
+    start_date = "2020-01-01"
+    end_date = "2024-12-31"
+    data_path = os.getenv("TECH_STOCK_DATA_PATH", "tests/data/tech_stocks.parquet")
 
-    # Check if data already exists
-    if not os.path.exists(DATA_PATH):
-        print("Downloading tech stock data from Yahoo Finance...")
+    if os.path.exists(data_path):
+        df = pd.read_parquet(data_path)
+        if isinstance(df.index, pd.MultiIndex):
+            names = list(df.index.names)
+            if len(names) >= 2 and names[0] == "date":
+                names[0] = "timestamp"
+                df.index = df.index.set_names(names)
+        return df
 
-        df = yf.download(TICKERS, start=START_DATE, end=END_DATE, interval="1d")
-        os.makedirs(
-            os.path.dirname(DATA_PATH), exist_ok=True
-        )  # Ensure directory exists
+    os.makedirs(os.path.dirname(data_path), exist_ok=True)
 
-        # Stack and reset index
-        df = df.stack(level=1, future_stack=True).reset_index()
+    df = yf.download(tickers, start=start_date, end=end_date, interval="1d")
+    df = df.stack(level=1, future_stack=True).reset_index()
+    df.columns = df.columns.str.lower()
+    df.columns.name = None
+    df = df.rename(columns={"date": "timestamp"})
+    df = df.sort_values(by=["timestamp", "ticker"]).set_index(["timestamp", "ticker"])
 
-        # Clean up column names
-        df.columns = df.columns.str.lower()
-        df.columns.name = None
-        df = df.rename(columns={"date": "timestamp"})
+    df["sma_128"] = df.groupby("ticker")["close"].transform(
+        lambda x: x.rolling(window=128).mean()
+    )
+    df["sma_256"] = df.groupby("ticker")["close"].transform(
+        lambda x: x.rolling(window=256).mean()
+    )
 
-        # Sort and set multi-index
-        df = df.sort_values(by=["timestamp", "ticker"]).set_index(
-            ["timestamp", "ticker"]
-        )
-
-        # Compute rolling means
-        df["sma_128"] = df.groupby("ticker")["close"].transform(
-            lambda x: x.rolling(window=128).mean()
-        )
-        df["sma_256"] = df.groupby("ticker")["close"].transform(
-            lambda x: x.rolling(window=256).mean()
-        )
-
-        # Subset date range
-        df = df.loc["2022-01-01":"2024-12-31"]
-        df.to_parquet(DATA_PATH)
-
-    return pd.read_parquet(DATA_PATH)
+    df = df.loc["2022-01-01":"2024-12-31"]
+    df.to_parquet(data_path)
+    return df
 
 
 # Mock Broker class

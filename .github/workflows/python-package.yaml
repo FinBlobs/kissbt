@@ -7,8 +7,57 @@ on:
     branches: [ "main" ]
 
 jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install dependencies
+      run: uv sync --extra dev --frozen
+    - name: Download and prepare integration dataset
+      run: |
+        uv run python - <<'PY'
+        import os
+        import pandas as pd
+        import yfinance as yf
+
+        tickers = ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA", "TSLA", "META", "SPY"]
+        start_date = "2020-01-01"
+        end_date = "2024-12-31"
+        data_path = "tests/data/tech_stocks.parquet"
+
+        os.makedirs("tests/data", exist_ok=True)
+        df = yf.download(tickers, start=start_date, end=end_date, interval="1d")
+        df = df.stack(level=1, future_stack=True).reset_index()
+        df.columns = df.columns.str.lower()
+        df.columns.name = None
+        df = df.rename(columns={"date": "timestamp"})
+        df = df.sort_values(by=["timestamp", "ticker"]).set_index(["timestamp", "ticker"])
+        df["sma_128"] = df.groupby("ticker")["close"].transform(
+            lambda x: x.rolling(window=128).mean()
+        )
+        df["sma_256"] = df.groupby("ticker")["close"].transform(
+            lambda x: x.rolling(window=256).mean()
+        )
+        df = df.loc["2022-01-01":"2024-12-31"]
+        df.to_parquet(data_path)
+        print(f"Saved {len(df)} rows to {data_path}")
+        PY
+    - name: Upload integration dataset
+      uses: actions/upload-artifact@v4
+      with:
+        name: tech-stock-data
+        path: tests/data/tech_stocks.parquet
+        retention-days: 1
+
   build:
     runs-on: ubuntu-latest
+    needs: fetch-data
     strategy:
       fail-fast: false
       matrix:
@@ -24,6 +73,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: uv sync --extra dev --frozen
+    - name: Download integration dataset
+      uses: actions/download-artifact@v4
+      with:
+        name: tech-stock-data
+        path: tests/data
     - name: Lint and format with ruff
       run: |
         uv run ruff format --check .
@@ -31,4 +85,6 @@ jobs:
     - name: Type check with mypy
       run: uv run mypy kissbt tests
     - name: Test with pytest
+      env:
+        TECH_STOCK_DATA_PATH: tests/data/tech_stocks.parquet
       run: uv run pytest
