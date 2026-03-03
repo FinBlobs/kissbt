@@ -12,8 +12,8 @@
 ## Python and Tooling
 - Use `uv` for development commands.
 - Development baseline: Python `3.13`.
-- Supported runtime versions: Python `3.10` to `3.14`.
-- Keep code compatible with Python `3.10` syntax.
+- Supported runtime versions: Python `3.12` to `3.14`.
+- Keep code compatible with Python `3.12` syntax.
 
 ## Setup
 ```bash

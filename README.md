@@ -44,7 +44,7 @@ conda install -c conda-forge kissbt
 For development, this repository uses `uv`.
 
 - Development baseline: Python `3.13`
-- Supported Python versions: `3.10` to `3.14`
+- Supported Python versions: `3.12` to `3.14`
 
 ```sh
 uv python install 3.13
