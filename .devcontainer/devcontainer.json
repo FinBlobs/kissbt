@@ -4,7 +4,7 @@
   "features": {
     "ghcr.io/astral-sh/uv:latest": {}
   },
-  "postCreateCommand": "uv sync --extra dev",
+  "postCreateCommand": "uv sync --extra dev --frozen",
   "customizations": {
     "vscode": {
       "extensions": [
