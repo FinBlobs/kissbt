@@ -39,6 +39,23 @@ To install `kissbt` via `conda`, run the following command:
 conda install -c conda-forge kissbt
 ```
 
+## Development
+
+For development, this repository uses `uv`.
+
+- Development baseline: Python `3.13`
+- Supported Python versions: `3.10` to `3.14`
+
+```sh
+uv python install 3.13
+uv venv --python 3.13
+uv sync --extra dev
+uv run ruff format .
+uv run ruff check .
+uv run mypy kissbt tests
+uv run pytest
+```
+
 ## Usage
 
 ### 1. Define a Strategy
