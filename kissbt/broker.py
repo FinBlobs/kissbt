@@ -139,7 +139,7 @@ class Broker:
                       high price >= limit
         """
         ticker = order.ticker
-        if order.order_type == OrderType.OPEN or order.order_type == OrderType.CLOSE:
+        if order.order_type in {OrderType.OPEN, OrderType.CLOSE}:
             col = "open" if order.order_type == OrderType.OPEN else "close"
             if order.limit is None:
                 return bar.loc[ticker, col]

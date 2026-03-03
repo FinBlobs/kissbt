@@ -10,7 +10,7 @@ class OrderType(Enum):
     LIMIT = "limit"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Order:
     """
     Trading order representation. Immutable to ensure data integrity and thread safety.
@@ -30,7 +30,7 @@ class Order:
     good_till_cancel: bool = False
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OpenPosition:
     """
     Immutable representation of an open trading position.
@@ -48,7 +48,7 @@ class OpenPosition:
     timestamp: pd.Timestamp
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ClosedPosition:
     """
     Immutable representation of a completed trading transaction.
