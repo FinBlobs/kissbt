@@ -1,5 +1,5 @@
 import pandas as pd
-from kissbt.entities import OpenPosition, Order, OrderType
+from kissbt.entities import ClosedPosition, OpenPosition, Order, OrderType
 
 
 def test_order_creation():
@@ -34,3 +34,36 @@ def test_open_position_creation():
     assert position.size == 50
     assert position.price == 250.0
     assert position.timestamp == entry_time
+
+
+def test_closed_position_uses_entry_exit_semantics():
+    position = ClosedPosition(
+        ticker="AAPL",
+        size=-10,
+        entry_price=100.0,
+        entry_timestamp=pd.Timestamp(2024, 1, 1),
+        exit_price=90.0,
+        exit_timestamp=pd.Timestamp(2024, 1, 2),
+    )
+
+    assert position.entry_price == 100.0
+    assert position.entry_timestamp == pd.Timestamp(2024, 1, 1)
+    assert position.exit_price == 90.0
+    assert position.exit_timestamp == pd.Timestamp(2024, 1, 2)
+    assert position.pnl == 100.0
+
+
+def test_closed_position_legacy_aliases_map_to_entry_exit():
+    position = ClosedPosition(
+        ticker="AAPL",
+        size=10,
+        entry_price=100.0,
+        entry_timestamp=pd.Timestamp(2024, 1, 1),
+        exit_price=105.0,
+        exit_timestamp=pd.Timestamp(2024, 1, 2),
+    )
+
+    assert position.purchase_price == position.entry_price
+    assert position.purchase_timestamp == position.entry_timestamp
+    assert position.selling_price == position.exit_price
+    assert position.selling_timestamp == position.exit_timestamp

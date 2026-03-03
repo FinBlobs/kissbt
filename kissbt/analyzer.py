@@ -319,7 +319,7 @@ class Analyzer:
         profitable_trades = sum(
             1
             for pos in self.broker.closed_positions
-            if (pos.selling_price - pos.purchase_price) * pos.size > 0
+            if pos.pnl > 0
         )
         return float(profitable_trades / len(self.broker.closed_positions))
 
@@ -346,15 +346,15 @@ class Analyzer:
                 $1.50 for every $1.00 lost).
         """
         profits = sum(
-            (pos.selling_price - pos.purchase_price) * pos.size
+            pos.pnl
             for pos in self.broker.closed_positions
-            if (pos.selling_price - pos.purchase_price) * pos.size > 0
+            if pos.pnl > 0
         )
         losses = abs(
             sum(
-                (pos.selling_price - pos.purchase_price) * pos.size
+                pos.pnl
                 for pos in self.broker.closed_positions
-                if (pos.selling_price - pos.purchase_price) * pos.size < 0
+                if pos.pnl < 0
             )
         )
         return float(profits / losses) if losses != 0 else float("inf")

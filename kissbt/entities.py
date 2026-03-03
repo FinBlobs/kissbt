@@ -56,15 +56,40 @@ class ClosedPosition:
     Args:
         ticker (str): Financial instrument identifier
         size (float): Position size (positive for long, negative for short)
-        purchase_price (float): Entry price of the position
-        purchase_timestamp (pd.Timestamp): Position entry timestamp
-        selling_price (float): Exit price of the position
-        selling_timestamp (pd.Timestamp): Position exit timestamp
+        entry_price (float): Position entry price
+        entry_timestamp (pd.Timestamp): Position entry timestamp
+        exit_price (float): Position exit price
+        exit_timestamp (pd.Timestamp): Position exit timestamp
     """
 
     ticker: str
     size: float
-    purchase_price: float
-    purchase_timestamp: pd.Timestamp
-    selling_price: float
-    selling_timestamp: pd.Timestamp
+    entry_price: float
+    entry_timestamp: pd.Timestamp
+    exit_price: float
+    exit_timestamp: pd.Timestamp
+
+    @property
+    def pnl(self) -> float:
+        """Signed PnL computed from entry/exit prices and signed size."""
+        return (self.exit_price - self.entry_price) * self.size
+
+    @property
+    def purchase_price(self) -> float:
+        """Backward-compatible alias for entry_price."""
+        return self.entry_price
+
+    @property
+    def purchase_timestamp(self) -> pd.Timestamp:
+        """Backward-compatible alias for entry_timestamp."""
+        return self.entry_timestamp
+
+    @property
+    def selling_price(self) -> float:
+        """Backward-compatible alias for exit_price."""
+        return self.exit_price
+
+    @property
+    def selling_timestamp(self) -> pd.Timestamp:
+        """Backward-compatible alias for exit_timestamp."""
+        return self.exit_timestamp

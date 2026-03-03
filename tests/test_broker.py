@@ -83,10 +83,10 @@ def test_liquidate_positions(broker):
     assert len(broker.closed_positions) == 1
     assert broker.closed_positions[0].ticker == "AAPL"
     assert broker.closed_positions[0].size == 10
-    assert broker.closed_positions[0].purchase_price == 150.0
-    assert broker.closed_positions[0].purchase_timestamp == time
-    assert broker.closed_positions[0].selling_price == 152.0
-    assert broker.closed_positions[0].selling_timestamp == time
+    assert broker.closed_positions[0].entry_price == 150.0
+    assert broker.closed_positions[0].entry_timestamp == time
+    assert broker.closed_positions[0].exit_price == 152.0
+    assert broker.closed_positions[0].exit_timestamp == time
 
 
 # --- Testing Portfolio Metrics ---
@@ -174,13 +174,11 @@ def test_execute_order_close_short_records_profitable_trade_correctly():
     assert len(broker.closed_positions) == 1
     closed_position = broker.closed_positions[0]
     assert closed_position.size == -10
-    assert closed_position.purchase_price == 100.0
-    assert closed_position.purchase_timestamp == entry_time
-    assert closed_position.selling_price == 90.0
-    assert closed_position.selling_timestamp == exit_time
-    assert (
-        closed_position.selling_price - closed_position.purchase_price
-    ) * closed_position.size > 0.0
+    assert closed_position.entry_price == 100.0
+    assert closed_position.entry_timestamp == entry_time
+    assert closed_position.exit_price == 90.0
+    assert closed_position.exit_timestamp == exit_time
+    assert closed_position.pnl > 0.0
 
 
 def test_execute_order_partial_close_short_records_trade_and_remaining_position():
@@ -214,13 +212,11 @@ def test_execute_order_partial_close_short_records_trade_and_remaining_position(
     closed_position = broker.closed_positions[0]
     assert closed_position.ticker == "AAPL"
     assert closed_position.size == -5
-    assert closed_position.purchase_price == 100.0
-    assert closed_position.purchase_timestamp == entry_time
-    assert closed_position.selling_price == 90.0
-    assert closed_position.selling_timestamp == partial_close_time
-    assert (
-        closed_position.selling_price - closed_position.purchase_price
-    ) * closed_position.size > 0.0
+    assert closed_position.entry_price == 100.0
+    assert closed_position.entry_timestamp == entry_time
+    assert closed_position.exit_price == 90.0
+    assert closed_position.exit_timestamp == partial_close_time
+    assert closed_position.pnl > 0.0
 
     assert "AAPL" in broker.open_positions
     remaining_position = broker.open_positions["AAPL"]
@@ -460,7 +456,7 @@ def test_update_ticker_out_of_universe(broker):
     closed_pos = broker._closed_positions[0]
     assert closed_pos.ticker == "AAPL"
     assert closed_pos.size == 10
-    assert closed_pos.purchase_price == 100
-    assert closed_pos.selling_price == 500
-    assert closed_pos.purchase_timestamp == pd.Timestamp(2024, 1, 1)
-    assert closed_pos.selling_timestamp == pd.Timestamp(2024, 1, 2)
+    assert closed_pos.entry_price == 100
+    assert closed_pos.exit_price == 500
+    assert closed_pos.entry_timestamp == pd.Timestamp(2024, 1, 1)
+    assert closed_pos.exit_timestamp == pd.Timestamp(2024, 1, 2)
