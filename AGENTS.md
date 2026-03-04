@@ -1,45 +1,27 @@
 # AGENTS.md
 
 ## Scope
-- These instructions apply to the whole repository.
+- Applies to the whole repository.
 
-## KISS Rule
+## KISS
 - `kissbt` means keep it simple.
 - Prefer the simplest solution that works.
-- Add complexity only with clear, high impact benefit (correctness, maintainability, or major performance).
-- Do not add new abstractions, patterns, or dependencies without a short justification in the PR/commit message.
+- Add complexity only for clear high-impact benefit (correctness,
+  maintainability, major performance).
+- Do not add abstractions, patterns, or dependencies without a short
+  justification in the PR/commit message.
 
-## Python and Tooling
+## Runtime & Tooling
 - Use `uv` for development commands.
 - Development baseline: Python `3.13`.
 - Supported runtime versions: Python `3.12` to `3.14`.
 - Keep code compatible with Python `3.12` syntax.
 
-## Setup
-```bash
-uv python install 3.13
-uv venv --python 3.13
-uv sync --extra dev
-```
-
-## Commands
-```bash
-uv run ruff format .
-uv run ruff check .
-uv run mypy kissbt tests
-uv run pytest
-```
-
-## Definition of Done
-- Tests updated when behavior changes.
-- `uv run ruff format --check .` passes.
-- `uv run ruff check .` passes.
-- `uv run mypy kissbt tests` passes.
-- `uv run pytest` passes.
+## Test & CI Discipline
+- Keep tests deterministic; avoid network calls in test execution paths.
+- If behavior changes, update or add tests.
 
 ## Final Gate (Before Commit/Push)
-- Always run the full final gate before committing or pushing.
-- Run commands in this exact order:
 ```bash
 uv run ruff format --check .
 uv run ruff check .
@@ -47,10 +29,6 @@ uv run mypy kissbt tests
 uv run pytest
 ```
 
-## Release Notes Process
-- Keep release notes in `CHANGELOG.md` using the `Unreleased` section.
-- For any user-visible code, behavior, API, or CI change, add one short item to
-  `CHANGELOG.md` under the right heading (`Added`, `Changed`, `Fixed`,
-  `Removed`, `Breaking`).
-- Before cutting a release, move `Unreleased` notes into a versioned section
-  with date (`## [x.y.z] - YYYY-MM-DD`) and start a fresh `Unreleased` block.
+## Release Notes
+- For user-visible code, API, behavior, or CI changes, add one short entry to
+  `CHANGELOG.md` under `Unreleased` (`Added`, `Changed`, `Fixed`, `Removed`).
