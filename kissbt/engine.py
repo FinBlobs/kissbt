@@ -25,41 +25,39 @@ class Engine:
         self.broker = broker
         self.strategy = strategy
 
+    def _normalize_data_index(self, data: pd.DataFrame) -> pd.DataFrame:
+        normalized: pd.DataFrame
+        if isinstance(data.index, pd.MultiIndex):
+            if list(data.index.names) != ["timestamp", "ticker"]:
+                raise ValueError(
+                    "MultiIndex data must be named ['timestamp', 'ticker']."
+                )
+            normalized = data
+        elif "timestamp" in data.columns and "ticker" in data.columns:
+            normalized = data.set_index(["timestamp", "ticker"])
+        else:
+            raise ValueError(
+                "Data must use MultiIndex ['timestamp', 'ticker'] or contain "
+                "'timestamp' and 'ticker' columns."
+            )
+
+        timestamp_values = normalized.index.get_level_values("timestamp")
+        if not timestamp_values.is_monotonic_increasing:
+            raise ValueError("Data must be sorted by 'timestamp' in ascending order.")
+        return normalized
+
     def _iter_bars(
         self, data: pd.DataFrame
     ) -> Iterator[tuple[pd.Timestamp, pd.DataFrame]]:
-        if isinstance(data.index, pd.MultiIndex):
-            if "timestamp" not in data.index.names:
-                raise ValueError(
-                    "MultiIndex data must include a 'timestamp' index level."
-                )
-            for current_timestamp, current_data in data.groupby(
-                level="timestamp", sort=False
-            ):
-                yield (
-                    pd.Timestamp(current_timestamp),
-                    current_data.droplevel("timestamp"),
-                )
-            return
-
-        if "timestamp" not in data.columns:
-            raise ValueError(
-                "Data must use a MultiIndex with 'timestamp' level or contain a "
-                "'timestamp' column."
-            )
-        if "ticker" not in data.columns:
-            raise ValueError(
-                "Data with a 'timestamp' column must also contain a 'ticker' column."
-            )
-
-        for current_timestamp, current_data in data.groupby("timestamp", sort=False):
-            normalized_bar = current_data.copy().set_index("ticker")
-            normalized_bar = normalized_bar.drop(columns=["timestamp"])
-            yield pd.Timestamp(current_timestamp), normalized_bar
+        normalized = self._normalize_data_index(data)
+        for current_timestamp, current_data in normalized.groupby(
+            level="timestamp", sort=False
+        ):
+            yield pd.Timestamp(current_timestamp), current_data.droplevel("timestamp")
 
     def run(self, data: pd.DataFrame) -> None:
         for current_timestamp, current_data in self._iter_bars(data):
             self.broker.update(current_data, current_timestamp)
-            self.strategy.generate_orders(current_data, current_timestamp)
+            self.strategy(current_data, current_timestamp)
 
         self.broker.liquidate_positions()
