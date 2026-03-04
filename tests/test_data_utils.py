@@ -62,6 +62,15 @@ def test_validate_market_data_requires_all_tickers():
         validate_market_data(df)
 
 
+@pytest.mark.parametrize("ticker", TECH_STOCK_TICKERS)
+def test_validate_market_data_rejects_ticker_with_all_nan_close(ticker: str):
+    df = _sample_market_data()
+    df.loc[(slice(None), ticker), "close"] = pd.NA
+
+    with pytest.raises(ValueError, match=f"no valid close prices for ticker: {ticker}"):
+        validate_market_data(df)
+
+
 def test_normalize_market_data_renames_date_index_level():
     df = _sample_market_data().copy()
     df.index = df.index.set_names(["date", "ticker"])

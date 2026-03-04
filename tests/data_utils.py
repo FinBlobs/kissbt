@@ -58,6 +58,12 @@ def validate_market_data(df: pd.DataFrame) -> None:
     if missing_tickers:
         raise ValueError(f"Dataset missing required tickers: {missing_tickers}")
 
+    for ticker in TECH_STOCK_TICKERS:
+        ticker_df = df.xs(ticker, level="ticker")
+        close_non_null = int(ticker_df["close"].notna().sum())
+        if close_non_null == 0:
+            raise ValueError(f"Dataset has no valid close prices for ticker: {ticker}")
+
 
 def _download_and_prepare_data(data_path: Path) -> pd.DataFrame:
     import yfinance as yf
@@ -67,6 +73,8 @@ def _download_and_prepare_data(data_path: Path) -> pd.DataFrame:
         start=START_DATE,
         end=END_DATE,
         interval="1d",
+        threads=False,
+        progress=False,
     )
     df = df.stack(level=1, future_stack=True).reset_index()
     df.columns = df.columns.str.lower()
