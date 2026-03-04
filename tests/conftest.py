@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import pytest
+
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from tests.data_utils import load_tech_stock_data

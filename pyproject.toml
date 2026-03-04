@@ -66,6 +66,9 @@ select = [
 ]
 # TODO: Gradually add more rules like N, UP, C4, B
 
+[tool.ruff.lint.isort]
+known-first-party = ["kissbt", "tests"]
+
 [tool.ruff.format]
 # Enable Black-compatible formatting
 quote-style = "double"

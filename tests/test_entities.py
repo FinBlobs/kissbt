@@ -1,4 +1,5 @@
 import pandas as pd
+
 from kissbt.entities import ClosedPosition, OpenPosition, Order, OrderType
 
 

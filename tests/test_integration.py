@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from kissbt.engine import Engine

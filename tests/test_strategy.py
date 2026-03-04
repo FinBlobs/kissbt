@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from kissbt.broker import Broker
 from kissbt.entities import Order
 from kissbt.strategy import Strategy
