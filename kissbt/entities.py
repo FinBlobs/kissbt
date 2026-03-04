@@ -71,5 +71,5 @@ class ClosedPosition:
 
     @property
     def pnl(self) -> float:
-        """Signed PnL computed from entry/exit prices and signed size."""
+        """Signed profit and loss (PnL) from entry/exit prices and signed size."""
         return (self.exit_price - self.entry_price) * self.size
