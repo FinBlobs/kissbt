@@ -2,7 +2,6 @@ import os
 
 import pandas as pd
 import pytest
-import yfinance as yf
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 
@@ -27,7 +26,13 @@ def tech_stock_data():
                 df.index = df.index.set_names(names)
         return df
 
+    if "TECH_STOCK_DATA_PATH" in os.environ:
+        raise FileNotFoundError(
+            f"Expected integration dataset at {data_path}, but it does not exist."
+        )
+
     os.makedirs(os.path.dirname(data_path), exist_ok=True)
+    import yfinance as yf
 
     df = yf.download(tickers, start=start_date, end=end_date, interval="1d")
     df = df.stack(level=1, future_stack=True).reset_index()
