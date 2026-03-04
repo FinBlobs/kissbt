@@ -70,6 +70,16 @@ class ClosedPosition:
     exit_timestamp: pd.Timestamp
 
     @property
+    def entry_value(self) -> float:
+        """Signed entry notional value (`entry_price * size`)."""
+        return self.entry_price * self.size
+
+    @property
+    def exit_value(self) -> float:
+        """Signed exit notional value (`exit_price * size`)."""
+        return self.exit_price * self.size
+
+    @property
     def pnl(self) -> float:
         """Signed profit and loss (PnL) from entry/exit prices and signed size."""
-        return (self.exit_price - self.entry_price) * self.size
+        return self.exit_value - self.entry_value

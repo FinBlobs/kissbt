@@ -46,3 +46,11 @@ uv run ruff check .
 uv run mypy kissbt tests
 uv run pytest
 ```
+
+## Release Notes Process
+- Keep release notes in `CHANGELOG.md` using the `Unreleased` section.
+- For any user-visible code, behavior, API, or CI change, add one short item to
+  `CHANGELOG.md` under the right heading (`Added`, `Changed`, `Fixed`,
+  `Removed`, `Breaking`).
+- Before cutting a release, move `Unreleased` notes into a versioned section
+  with date (`## [x.y.z] - YYYY-MM-DD`) and start a fresh `Unreleased` block.

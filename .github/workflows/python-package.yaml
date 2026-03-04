@@ -20,34 +20,7 @@ jobs:
     - name: Install dependencies
       run: uv sync --extra dev --frozen
     - name: Download and prepare integration dataset
-      run: |
-        uv run python - <<'PY'
-        import os
-        import pandas as pd
-        import yfinance as yf
-
-        tickers = ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA", "TSLA", "META", "SPY"]
-        start_date = "2020-01-01"
-        end_date = "2024-12-31"
-        data_path = "tests/data/tech_stocks.parquet"
-
-        os.makedirs("tests/data", exist_ok=True)
-        df = yf.download(tickers, start=start_date, end=end_date, interval="1d")
-        df = df.stack(level=1, future_stack=True).reset_index()
-        df.columns = df.columns.str.lower()
-        df.columns.name = None
-        df = df.rename(columns={"date": "timestamp"})
-        df = df.sort_values(by=["timestamp", "ticker"]).set_index(["timestamp", "ticker"])
-        df["sma_128"] = df.groupby("ticker")["close"].transform(
-            lambda x: x.rolling(window=128).mean()
-        )
-        df["sma_256"] = df.groupby("ticker")["close"].transform(
-            lambda x: x.rolling(window=256).mean()
-        )
-        df = df.loc["2022-01-01":"2024-12-31"]
-        df.to_parquet(data_path)
-        print(f"Saved {len(df)} rows to {data_path}")
-        PY
+      run: uv run python tests/scripts/prepare_integration_data.py
     - name: Upload integration dataset
       uses: actions/upload-artifact@v4
       with:
@@ -73,6 +46,20 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: uv sync --extra dev --frozen --python ${{ matrix.python-version }}
+    - name: Assert matrix Python interpreter
+      run: |
+        uv run python - <<'PY'
+        import os
+        import sys
+
+        expected = os.environ["EXPECTED_PYTHON_MINOR"]
+        actual = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if actual != expected:
+            raise SystemExit(f"Expected Python {expected}, got {actual}")
+        print(f"Using Python {actual}")
+        PY
+      env:
+        EXPECTED_PYTHON_MINOR: ${{ matrix.python-version }}
     - name: Download integration dataset
       uses: actions/download-artifact@v4
       with:

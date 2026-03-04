@@ -50,6 +50,8 @@ def test_closed_position_uses_entry_exit_semantics():
     assert position.entry_timestamp == pd.Timestamp(2024, 1, 1)
     assert position.exit_price == 90.0
     assert position.exit_timestamp == pd.Timestamp(2024, 1, 2)
+    assert position.entry_value == -1000.0
+    assert position.exit_value == -900.0
     assert position.pnl == 100.0
 
 
