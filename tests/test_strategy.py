@@ -12,7 +12,7 @@ class DummyStrategy(Strategy):
     ) -> None:
         for ticker in current_data.index:
             if current_data.loc[ticker, "close"] > 100:
-                self._broker.place_order(Order(ticker, 1))
+                self.broker.place_order(Order(ticker, 1))
 
 
 def test_strategy_broker_type_error():
@@ -30,3 +30,10 @@ def test_strategy_execution():
     assert len(broker._open_orders) == 1
     assert broker._open_orders[0].ticker == "TICKER_A"
     assert broker._open_orders[0].size == 1
+
+
+def test_strategy_broker_property():
+    broker = Broker()
+    strategy = DummyStrategy(broker)
+
+    assert strategy.broker is broker

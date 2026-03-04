@@ -16,6 +16,10 @@ class Engine:
     """
 
     def __init__(self, broker: Broker, strategy: Strategy) -> None:
+        if strategy.broker is not broker:
+            raise ValueError(
+                "strategy must be initialized with the same broker passed to Engine"
+            )
         self.broker = broker
         self.strategy = strategy
 
