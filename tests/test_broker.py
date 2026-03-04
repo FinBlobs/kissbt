@@ -309,6 +309,13 @@ def test_invalid_order_type(broker):
         broker._get_price_for_order(order, bar)
 
 
+def test_limit_order_requires_limit_price(broker):
+    order = Order("AAPL", 10, OrderType.LIMIT)
+    bar = pd.DataFrame({"open": [100], "low": [98], "high": [102]}, index=["AAPL"])
+    with pytest.raises(ValueError, match="Limit order requires a limit price"):
+        broker._get_price_for_order(order, bar)
+
+
 def test_position_update(broker):
     broker._open_positions["AAPL"] = OpenPosition(
         ticker="AAPL", size=5, price=100, timestamp=pd.Timestamp(2024, 1, 1)
@@ -360,6 +367,16 @@ def test_update_history_with_benchmark(broker, mocker):
     assert len(broker.history["benchmark"]) == 1
 
 
+def test_update_history_sets_internal_benchmark_size():
+    broker = Broker(benchmark="AAPL")
+    broker._current_bar = pd.DataFrame({"close": [100]}, index=["AAPL"])
+    broker._current_timestamp = pd.Timestamp("2024-01-01")
+
+    broker._update_history()
+
+    assert broker._benchmark_size > 0.0
+
+
 def test_broker_initializes_with_benchmark():
     broker_with_benchmark = Broker(
         start_capital=100000,
@@ -404,6 +421,12 @@ def test_history_copy(broker):
     history_copy = broker.history
     assert history_copy == broker._history
     assert history_copy is not broker._history  # Ensure it's a copy
+
+
+def test_history_copy_prevents_list_mutation_leaks(broker):
+    history_copy = broker.history
+    history_copy["cash"].append(1.0)
+    assert broker.history["cash"] == []
 
 
 def test_update_cash(broker):
@@ -461,3 +484,17 @@ def test_update_ticker_out_of_universe(broker):
     assert closed_pos.exit_price == 500
     assert closed_pos.entry_timestamp == pd.Timestamp(2024, 1, 1)
     assert closed_pos.exit_timestamp == pd.Timestamp(2024, 1, 2)
+
+
+def test_missing_ticker_gtc_order_is_dropped_with_warning(capsys):
+    broker = Broker()
+    broker.place_order(Order("MISSING", 10, OrderType.OPEN, good_till_cancel=True))
+
+    broker.update(
+        pd.DataFrame({"close": [100]}, index=["AAPL"]),
+        pd.Timestamp(2024, 1, 2),
+    )
+
+    captured = capsys.readouterr()
+    assert "MISSING could not be bought on 2024-01-02 00:00:00." in captured.out
+    assert broker._open_orders == []

@@ -54,6 +54,12 @@ class Analyzer:
 
         self.broker = broker
         self.analysis_df = pd.DataFrame(self.broker.history)
+        if self.analysis_df.empty:
+            raise ValueError("Broker history is empty. Run a backtest before analysis.")
+
+        if "total_value" not in self.analysis_df.columns:
+            raise ValueError("Broker history must include a 'total_value' series.")
+
         self.analysis_df["returns"] = self.analysis_df["total_value"].pct_change()
         self.analysis_df["drawdown"] = (
             self.analysis_df["total_value"].cummax() - self.analysis_df["total_value"]
@@ -94,11 +100,20 @@ class Analyzer:
                 for distinguishing between portfolio and benchmark statistics.
         """
 
-        if (value_series <= 0).any():
+        cleaned_series = value_series.dropna()
+        if (cleaned_series <= 0).any():
             raise ValueError(
                 "Value series contains non-positive values, cannot compute log-based statistics"  # noqa: E501
             )
-        y = np.log(value_series.to_numpy())
+        if cleaned_series.size < 2:
+            return {
+                f"{prefix}slope": 0.0,
+                f"{prefix}slope_se": 0.0,
+                f"{prefix}slope_tstat": 0.0,
+                f"{prefix}r_squared": 0.0,
+            }
+
+        y = np.log(cleaned_series.to_numpy())
         x = np.arange(y.size, dtype=float)
 
         res = linregress(x, y)
@@ -111,10 +126,10 @@ class Analyzer:
             slope_tstat = slope / slope_se
 
         return {
-            f"{prefix}slope": slope,
-            f"{prefix}slope_se": slope_se,
-            f"{prefix}slope_tstat": slope_tstat,
-            f"{prefix}r_squared": r_squared,
+            f"{prefix}slope": float(slope),
+            f"{prefix}slope_se": float(slope_se),
+            f"{prefix}slope_tstat": float(slope_tstat),
+            f"{prefix}r_squared": float(r_squared),
         }
 
     def get_performance_metrics(self) -> dict[str, float]:
@@ -226,6 +241,9 @@ class Analyzer:
             float: The annualized return as a decimal (e.g., 0.10 for 10% annual return)
         """
         number_of_bars = len(self.analysis_df)
+        if number_of_bars < 2:
+            return 0.0
+
         years = number_of_bars * self.seconds_per_bar / self.trading_seconds_per_year
 
         total_return = (
@@ -253,7 +271,9 @@ class Analyzer:
         """
         bars_per_year = self.trading_seconds_per_year / self.seconds_per_bar
         rf_rate_per_bar = (1 + risk_free_rate) ** (1 / bars_per_year) - 1
-        excess_returns = self.analysis_df["returns"] - rf_rate_per_bar
+        excess_returns = (self.analysis_df["returns"] - rf_rate_per_bar).dropna()
+        if excess_returns.empty:
+            return 0.0
 
         if np.isclose(excess_returns.std(), 0):
             return 0
@@ -293,7 +313,10 @@ class Analyzer:
             float: The annualized volatility of the portfolio returns
         """
         bars_per_year = self.trading_seconds_per_year / self.seconds_per_bar
-        return float(self.analysis_df["returns"].std() * np.sqrt(bars_per_year))
+        returns = self.analysis_df["returns"].dropna()
+        if returns.empty:
+            return 0.0
+        return float(returns.std() * np.sqrt(bars_per_year))
 
     def _calculate_win_rate(self) -> float:
         """

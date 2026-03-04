@@ -1,5 +1,6 @@
 import pandas as pd
 
+import kissbt
 from kissbt.entities import ClosedPosition, OpenPosition, Order, OrderType
 
 
@@ -68,3 +69,10 @@ def test_closed_position_requires_entry_exit_fields():
 
     assert position.entry_price == 100.0
     assert position.exit_price == 105.0
+
+
+def test_package_root_exports_core_api():
+    assert kissbt.Broker.__name__ == "Broker"
+    assert kissbt.Engine.__name__ == "Engine"
+    assert kissbt.Analyzer.__name__ == "Analyzer"
+    assert kissbt.Strategy.__name__ == "Strategy"

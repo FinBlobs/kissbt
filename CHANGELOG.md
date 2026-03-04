@@ -20,6 +20,13 @@ This changelog follows the Keep a Changelog style.
 - `CHANGELOG.md` and AGENTS release-note process were introduced.
 - `Strategy` now exposes a public `broker` property and `Engine` validates
   strategy/broker instance consistency at initialization.
+- Improved API and validation ergonomics: package-root exports for core
+  classes, clearer `Engine` input validation (including flat
+  `timestamp`/`ticker` data), `Broker` limit-order validation, robust
+  `Analyzer` metrics for short histories, defensive `Broker.history` copies,
+  post-liquidation history snapshots, and documented behavior that
+  missing-ticker orders are dropped (with warning) even when
+  good-till-cancel.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are

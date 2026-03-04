@@ -97,14 +97,14 @@ class Broker:
         self._history["positions"].append(len(self._open_positions))
         if self._benchmark is not None:
             if len(self._history["benchmark"]) == 0:
-                self.benchmark_size = (
+                self._benchmark_size = (
                     self._start_capital
                     / self._current_bar.loc[self._benchmark, "close"]
                     * (1.0 + self._fees)
                 )
             self._history["benchmark"].append(
                 self._current_bar.loc[self._benchmark, "close"]
-                * self.benchmark_size
+                * self._benchmark_size
                 * (1.0 - self._fees)
             )
 
@@ -151,6 +151,8 @@ class Broker:
                 else:
                     return None
         elif order.order_type == OrderType.LIMIT:
+            if order.limit is None:
+                raise ValueError("Limit order requires a limit price.")
             if order.size > 0.0 and bar.loc[ticker, "low"] <= order.limit:
                 return min(bar.loc[ticker, "open"], order.limit)
             elif order.size < 0.0 and bar.loc[ticker, "high"] >= order.limit:
@@ -347,8 +349,8 @@ class Broker:
         Notes:
             - Short fees are calculated using the current bar's closing price
             - Assets outside the universe are sold at the previous bar's closing price
-            - Orders that cannot be executed due to missing data are skipped with a
-              warning
+            - Orders with unavailable ticker data are skipped, warned about,
+              and dropped, including good-till-cancel orders
             - Good-till-cancel orders that aren't filled are retained for the next bar
         """
         self._previous_bar = self._current_bar
@@ -411,7 +413,7 @@ class Broker:
             ):
                 remaining_open_orders.append(open_order)
 
-        # Retain orders that are good till cancel and were not filled for the next bar
+        # Retain only evaluated good-till-cancel orders that were not filled
         self._open_orders = remaining_open_orders
 
         # update stats
@@ -431,6 +433,7 @@ class Broker:
         Returns:
             None
         """
+        had_open_positions = bool(self._open_positions)
         for ticker in [
             ticker for ticker in self._open_positions.keys()
         ]:  # open_positions is modified during iteration
@@ -439,6 +442,8 @@ class Broker:
                 self._current_bar,
                 self._current_timestamp,
             )
+        if had_open_positions and self._current_timestamp is not None:
+            self._update_history()
 
     def place_order(self, order: Order):
         """
@@ -549,7 +554,7 @@ class Broker:
         return self._closed_positions.copy()
 
     @property
-    def history(self) -> dict[str, list[float]]:
+    def history(self) -> dict[str, list[float | int | pd.Timestamp]]:
         """Gets the historical performance metrics dictionary.
 
         Contains time series data tracking portfolio metrics:
@@ -561,9 +566,9 @@ class Broker:
 
         Returns:
             Dict[str, List[float]]: Dictionary mapping metric names to value histories.
-                Returns a defensive copy to prevent external modifications.
+                Returns copies of internal lists to prevent external modifications.
         """
-        return self._history.copy()
+        return {key: values.copy() for key, values in self._history.items()}
 
     @property
     def cash(self) -> float:

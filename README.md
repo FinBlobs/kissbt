@@ -95,8 +95,10 @@ Use the `Engine` to run the backtest with your strategy and market data:
 from kissbt.engine import Engine
 import pandas as pd
 
-# Load market data
-data = pd.read_csv('market_data.csv', parse_dates=['date'])
+# Load market data and normalize it for Engine.run(...)
+data = pd.read_csv("market_data.csv", parse_dates=["date"])
+data = data.rename(columns={"date": "timestamp"})
+data = data.sort_values(["timestamp", "ticker"]).set_index(["timestamp", "ticker"])
 
 # Initialize strategy and engine
 strategy = MyStrategy(broker)
