@@ -14,7 +14,7 @@ class Strategy(ABC):
     interacts with a broker instance to place orders and manage positions.
 
     Attributes:
-        _broker (Broker): Trading broker instance for order execution and position
+        broker (Broker): Trading broker instance for order execution and position
             management
     """
 
@@ -30,8 +30,13 @@ class Strategy(ABC):
         """
         if not isinstance(broker, Broker):
             raise TypeError("broker must be an instance of Broker")
-        self._broker = broker  # Make broker protected
+        self._broker = broker
         self.initialize()
+
+    @property
+    def broker(self) -> Broker:
+        """Return the broker associated with this strategy."""
+        return self._broker
 
     def initialize(self) -> None:
         """
@@ -77,9 +82,8 @@ class Strategy(ABC):
             None
 
         Note:
-            - Orders are placed through the _broker instance using methods like:
-              create_market_order(), create_limit_order()
-            - Position and portfolio information can be accessed through the _broker
+            - Orders are placed through the broker instance with place_order(...)
+            - Position and portfolio information can be accessed through the broker
             - Avoid look-ahead bias by only using data available at current_timestamp
             - All orders are processed at the next bar's prices (which price depends on
               the order type)
@@ -89,10 +93,14 @@ class Strategy(ABC):
         """
         raise NotImplementedError("Subclass must implement generate_orders()")
 
-    def __call__(self, *args, **kwargs) -> None:
+    def __call__(
+        self,
+        current_data: pd.DataFrame,
+        current_timestamp: pd.Timestamp,
+    ) -> None:
         """
         Make strategy callable to generate orders.
 
         Delegates to generate_orders() method.
         """
-        self.generate_orders(*args, **kwargs)
+        self.generate_orders(current_data, current_timestamp)

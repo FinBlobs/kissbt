@@ -74,7 +74,7 @@ class MyStrategy(Strategy):
             sma_128 = current_data.loc[ticker, "sma_128"]
             if close_price > sma_128:
                 order = Order(ticker=ticker, size=10, order_type=OrderType.OPEN)
-                self._broker.place_order(order)
+                self.broker.place_order(order)
 ```
 
 ### 2. Set Up the Broker

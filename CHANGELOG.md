@@ -18,6 +18,8 @@ This changelog follows the Keep a Changelog style.
   `ClosedPosition.pnl`.
 - CI integration dataset preparation now uses shared test utility code.
 - `CHANGELOG.md` and AGENTS release-note process were introduced.
+- `Strategy` now exposes a public `broker` property and `Engine` validates
+  strategy/broker instance consistency at initialization.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are

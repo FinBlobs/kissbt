@@ -17,29 +17,26 @@ class GoldenCrossStrategy(Strategy):
         current_data: pd.DataFrame,
         current_timestamp: pd.Timestamp,
     ) -> None:
-        for ticker in self._broker.open_positions:
+        for ticker in self.broker.open_positions:
             if (
                 current_data.loc[ticker, "sma_128"]
                 < current_data.loc[ticker, "sma_256"]
             ):
-                self._broker.place_order(
-                    Order(ticker, -self._broker.open_positions[ticker].size)
+                self.broker.place_order(
+                    Order(ticker, -self.broker.open_positions[ticker].size)
                 )
 
         for ticker in current_data.index:
-            if (
-                ticker == self._broker.benchmark
-                or ticker in self._broker.open_positions
-            ):
+            if ticker == self.broker.benchmark or ticker in self.broker.open_positions:
                 continue
             if (
                 current_data.loc[ticker, "sma_128"]
                 >= current_data.loc[ticker, "sma_256"]
             ):
                 size = round(
-                    self._broker.portfolio_value / 7 / current_data.loc[ticker, "close"]
+                    self.broker.portfolio_value / 7 / current_data.loc[ticker, "close"]
                 )
-                self._broker.place_order(Order(ticker, size))
+                self.broker.place_order(Order(ticker, size))
 
 
 def test_analyzer_with_golden_cross(tech_stock_data):
