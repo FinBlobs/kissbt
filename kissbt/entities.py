@@ -56,15 +56,30 @@ class ClosedPosition:
     Args:
         ticker (str): Financial instrument identifier
         size (float): Position size (positive for long, negative for short)
-        purchase_price (float): Entry price of the position
-        purchase_timestamp (pd.Timestamp): Position entry timestamp
-        selling_price (float): Exit price of the position
-        selling_timestamp (pd.Timestamp): Position exit timestamp
+        entry_price (float): Position entry price
+        entry_timestamp (pd.Timestamp): Position entry timestamp
+        exit_price (float): Position exit price
+        exit_timestamp (pd.Timestamp): Position exit timestamp
     """
 
     ticker: str
     size: float
-    purchase_price: float
-    purchase_timestamp: pd.Timestamp
-    selling_price: float
-    selling_timestamp: pd.Timestamp
+    entry_price: float
+    entry_timestamp: pd.Timestamp
+    exit_price: float
+    exit_timestamp: pd.Timestamp
+
+    @property
+    def entry_value(self) -> float:
+        """Signed entry notional value (`entry_price * size`)."""
+        return self.entry_price * self.size
+
+    @property
+    def exit_value(self) -> float:
+        """Signed exit notional value (`exit_price * size`)."""
+        return self.exit_price * self.size
+
+    @property
+    def pnl(self) -> float:
+        """Signed profit and loss (PnL) from entry/exit prices and signed size."""
+        return self.exit_value - self.entry_value

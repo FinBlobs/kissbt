@@ -1,38 +1,34 @@
 # AGENTS.md
 
 ## Scope
-- These instructions apply to the whole repository.
+- Applies to the whole repository.
 
-## KISS Rule
+## KISS
 - `kissbt` means keep it simple.
 - Prefer the simplest solution that works.
-- Add complexity only with clear, high impact benefit (correctness, maintainability, or major performance).
-- Do not add new abstractions, patterns, or dependencies without a short justification in the PR/commit message.
+- Add complexity only for clear high-impact benefit (correctness,
+  maintainability, major performance).
+- Do not add abstractions, patterns, or dependencies without a short
+  justification in the PR/commit message.
 
-## Python and Tooling
+## Runtime & Tooling
 - Use `uv` for development commands.
 - Development baseline: Python `3.13`.
 - Supported runtime versions: Python `3.12` to `3.14`.
 - Keep code compatible with Python `3.12` syntax.
 
-## Setup
-```bash
-uv python install 3.13
-uv venv --python 3.13
-uv sync --extra dev
-```
+## Test & CI Discipline
+- Keep tests deterministic; avoid network calls in test execution paths.
+- If behavior changes, update or add tests.
 
-## Commands
+## Final Gate (Before Commit/Push)
 ```bash
-uv run ruff format .
+uv run ruff format --check .
 uv run ruff check .
 uv run mypy kissbt tests
 uv run pytest
 ```
 
-## Definition of Done
-- Tests updated when behavior changes.
-- `uv run ruff format --check .` passes.
-- `uv run ruff check .` passes.
-- `uv run mypy kissbt tests` passes.
-- `uv run pytest` passes.
+## Release Notes
+- For user-visible code, API, behavior, or CI changes, add one short entry to
+  `CHANGELOG.md` under `Unreleased` (`Added`, `Changed`, `Fixed`, `Removed`).

@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from kissbt.broker import Broker
 from kissbt.entities import OpenPosition, Order, OrderType
 
@@ -83,10 +84,10 @@ def test_liquidate_positions(broker):
     assert len(broker.closed_positions) == 1
     assert broker.closed_positions[0].ticker == "AAPL"
     assert broker.closed_positions[0].size == 10
-    assert broker.closed_positions[0].purchase_price == 150.0
-    assert broker.closed_positions[0].purchase_timestamp == time
-    assert broker.closed_positions[0].selling_price == 152.0
-    assert broker.closed_positions[0].selling_timestamp == time
+    assert broker.closed_positions[0].entry_price == 150.0
+    assert broker.closed_positions[0].entry_timestamp == time
+    assert broker.closed_positions[0].exit_price == 152.0
+    assert broker.closed_positions[0].exit_timestamp == time
 
 
 # --- Testing Portfolio Metrics ---
@@ -141,6 +142,88 @@ def test_execute_order_close(broker):
     assert float(broker.cash) == 100000 + 10 * 152 * 0.999
     assert len(broker.open_positions) == 0
     assert len(broker.closed_positions) == 1
+
+
+def test_execute_order_close_short_records_profitable_trade_correctly():
+    broker = Broker(
+        start_capital=100000,
+        fees=0.0,
+        long_only=False,
+        short_fee_rate=0.02,
+    )
+    entry_time = pd.Timestamp("2024-01-01")
+    exit_time = pd.Timestamp("2024-01-02")
+
+    # Open short at 100 and close at 90.
+    broker._execute_order(
+        Order("AAPL", -10, OrderType.OPEN),
+        pd.DataFrame(
+            {"open": [100.0], "close": [100.0], "high": [101.0], "low": [99.0]},
+            index=["AAPL"],
+        ),
+        entry_time,
+    )
+    broker._execute_order(
+        Order("AAPL", 10, OrderType.CLOSE),
+        pd.DataFrame(
+            {"open": [90.0], "close": [90.0], "high": [91.0], "low": [89.0]},
+            index=["AAPL"],
+        ),
+        exit_time,
+    )
+
+    assert len(broker.closed_positions) == 1
+    closed_position = broker.closed_positions[0]
+    assert closed_position.size == -10
+    assert closed_position.entry_price == 100.0
+    assert closed_position.entry_timestamp == entry_time
+    assert closed_position.exit_price == 90.0
+    assert closed_position.exit_timestamp == exit_time
+    assert closed_position.pnl > 0.0
+
+
+def test_execute_order_partial_close_short_records_trade_and_remaining_position():
+    broker = Broker(
+        start_capital=100000,
+        fees=0.0,
+        long_only=False,
+        short_fee_rate=0.02,
+    )
+    entry_time = pd.Timestamp("2024-01-01")
+    partial_close_time = pd.Timestamp("2024-01-02")
+
+    broker._execute_order(
+        Order("AAPL", -10, OrderType.OPEN),
+        pd.DataFrame(
+            {"open": [100.0], "close": [100.0], "high": [101.0], "low": [99.0]},
+            index=["AAPL"],
+        ),
+        entry_time,
+    )
+    broker._execute_order(
+        Order("AAPL", 5, OrderType.CLOSE),
+        pd.DataFrame(
+            {"open": [90.0], "close": [90.0], "high": [91.0], "low": [89.0]},
+            index=["AAPL"],
+        ),
+        partial_close_time,
+    )
+
+    assert len(broker.closed_positions) == 1
+    closed_position = broker.closed_positions[0]
+    assert closed_position.ticker == "AAPL"
+    assert closed_position.size == -5
+    assert closed_position.entry_price == 100.0
+    assert closed_position.entry_timestamp == entry_time
+    assert closed_position.exit_price == 90.0
+    assert closed_position.exit_timestamp == partial_close_time
+    assert closed_position.pnl > 0.0
+
+    assert "AAPL" in broker.open_positions
+    remaining_position = broker.open_positions["AAPL"]
+    assert remaining_position.size == -5
+    assert remaining_position.price == 100.0
+    assert remaining_position.timestamp == entry_time
 
 
 def test_place_multiple_orders(broker):
@@ -374,7 +457,7 @@ def test_update_ticker_out_of_universe(broker):
     closed_pos = broker._closed_positions[0]
     assert closed_pos.ticker == "AAPL"
     assert closed_pos.size == 10
-    assert closed_pos.purchase_price == 100
-    assert closed_pos.selling_price == 500
-    assert closed_pos.purchase_timestamp == pd.Timestamp(2024, 1, 1)
-    assert closed_pos.selling_timestamp == pd.Timestamp(2024, 1, 2)
+    assert closed_pos.entry_price == 100
+    assert closed_pos.exit_price == 500
+    assert closed_pos.entry_timestamp == pd.Timestamp(2024, 1, 1)
+    assert closed_pos.exit_timestamp == pd.Timestamp(2024, 1, 2)
