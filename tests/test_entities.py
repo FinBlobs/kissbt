@@ -53,7 +53,7 @@ def test_closed_position_uses_entry_exit_semantics():
     assert position.pnl == 100.0
 
 
-def test_closed_position_legacy_aliases_map_to_entry_exit():
+def test_closed_position_requires_entry_exit_fields():
     position = ClosedPosition(
         ticker="AAPL",
         size=10,
@@ -63,7 +63,5 @@ def test_closed_position_legacy_aliases_map_to_entry_exit():
         exit_timestamp=pd.Timestamp(2024, 1, 2),
     )
 
-    assert position.purchase_price == position.entry_price
-    assert position.purchase_timestamp == position.entry_timestamp
-    assert position.selling_price == position.exit_price
-    assert position.selling_timestamp == position.exit_timestamp
+    assert position.entry_price == 100.0
+    assert position.exit_price == 105.0

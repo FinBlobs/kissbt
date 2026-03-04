@@ -73,23 +73,3 @@ class ClosedPosition:
     def pnl(self) -> float:
         """Signed PnL computed from entry/exit prices and signed size."""
         return (self.exit_price - self.entry_price) * self.size
-
-    @property
-    def purchase_price(self) -> float:
-        """Backward-compatible alias for entry_price."""
-        return self.entry_price
-
-    @property
-    def purchase_timestamp(self) -> pd.Timestamp:
-        """Backward-compatible alias for entry_timestamp."""
-        return self.entry_timestamp
-
-    @property
-    def selling_price(self) -> float:
-        """Backward-compatible alias for exit_price."""
-        return self.exit_price
-
-    @property
-    def selling_timestamp(self) -> pd.Timestamp:
-        """Backward-compatible alias for exit_timestamp."""
-        return self.exit_timestamp
