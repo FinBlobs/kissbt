@@ -36,3 +36,13 @@ uv run pytest
 - `uv run ruff check .` passes.
 - `uv run mypy kissbt tests` passes.
 - `uv run pytest` passes.
+
+## Final Gate (Before Commit/Push)
+- Always run the full final gate before committing or pushing.
+- Run commands in this exact order:
+```bash
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy kissbt tests
+uv run pytest
+```
