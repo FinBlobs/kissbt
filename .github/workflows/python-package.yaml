@@ -20,7 +20,7 @@ jobs:
     - name: Install dependencies
       run: uv sync --extra dev --frozen
     - name: Download and prepare integration dataset
-      run: uv run python tests/scripts/prepare_integration_data.py
+      run: uv run python -m tests.scripts.prepare_integration_data
     - name: Upload integration dataset
       uses: actions/upload-artifact@v4
       with:

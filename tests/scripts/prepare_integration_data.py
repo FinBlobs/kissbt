@@ -1,3 +1,8 @@
+"""
+Run with:
+    uv run python -m tests.scripts.prepare_integration_data
+"""
+
 from tests.data_utils import load_tech_stock_data
 
 
