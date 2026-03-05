@@ -110,9 +110,7 @@ def _run_backtest(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "summary": {
             "bars": len(result.history),
-            "final_cash": result.final_cash,
             "final_portfolio_value": result.final_portfolio_value,
-            "open_positions": len(result.open_positions),
             "closed_positions": len(result.closed_positions),
             "events": len(broker.events),
         },

@@ -119,9 +119,10 @@ result = engine.run(market_data)
 
 - `history`
 - `closed_positions`
-- `open_positions`
-- `final_cash`
 - `final_portfolio_value`
+
+`Engine.run(...)` liquidates all positions at the end of the run. If liquidation
+does not fully close positions, it raises an error.
 
 ### 4. Analyze performance
 

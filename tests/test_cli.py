@@ -60,5 +60,7 @@ def test_cli_backtest_writes_result_json(tmp_path, monkeypatch):
     payload = json.loads(raw_output)
     assert payload["summary"]["bars"] == 2
     assert payload["summary"]["closed_positions"] == 1
+    assert "final_cash" not in payload["summary"]
+    assert "open_positions" not in payload["summary"]
     assert "metrics" in payload
     assert payload["metrics"]["profit_factor"] is None

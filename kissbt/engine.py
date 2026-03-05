@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from kissbt.broker import Broker
-from kissbt.entities import ClosedPosition, OpenPosition
+from kissbt.entities import ClosedPosition
 from kissbt.strategy import Strategy
 
 
@@ -13,8 +13,6 @@ class BacktestResult:
 
     history: pd.DataFrame
     closed_positions: list[ClosedPosition]
-    open_positions: dict[str, OpenPosition]
-    final_cash: float
     final_portfolio_value: float
 
 
@@ -75,10 +73,14 @@ class Engine:
             self.strategy.generate_orders(current_data, current_timestamp)
 
         self.broker.liquidate_positions()
+        if self.broker.open_positions:
+            raise RuntimeError(
+                "failed to liquidate all positions at end of run: "
+                + ", ".join(sorted(self.broker.open_positions.keys()))
+            )
+
         return BacktestResult(
             history=pd.DataFrame(self.broker.history),
             closed_positions=self.broker.closed_positions,
-            open_positions=self.broker.open_positions,
-            final_cash=self.broker.cash,
             final_portfolio_value=self.broker.portfolio_value,
         )

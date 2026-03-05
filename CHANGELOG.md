@@ -27,6 +27,8 @@ This changelog follows the Keep a Changelog style.
   strategy/broker instance consistency at initialization.
 - `Engine.run(...)` now validates input data schema explicitly and raises clear
   actionable errors for invalid inputs.
+- `BacktestResult` now contains only `history`, `closed_positions`, and
+  `final_portfolio_value` to avoid ambiguous end-of-run state fields.
 - README now includes a full in-memory example and CLI usage example.
 
 ### Fixed
@@ -44,6 +46,8 @@ This changelog follows the Keep a Changelog style.
 - `Broker.events` now returns defensive copies of event items.
 - CLI JSON output now normalizes non-finite values to `null` and writes strict
   JSON.
+- `Engine.run(...)` now raises an explicit error if end-of-run liquidation
+  leaves positions open.
 
 ### Removed
 - Removed legacy `purchase_*` and `selling_*` `ClosedPosition` fields/aliases.

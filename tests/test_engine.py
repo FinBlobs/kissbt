@@ -73,11 +73,11 @@ def test_run_returns_structured_backtest_result():
     result = engine.run(_build_valid_data())
 
     assert isinstance(result, BacktestResult)
-    assert result.final_cash == broker.cash
     assert result.final_portfolio_value == broker.portfolio_value
     assert len(result.history) == 2
     assert len(result.closed_positions) == 1
-    assert result.open_positions == {}
+    assert broker.open_positions == {}
+    assert result.final_portfolio_value == broker.cash
 
 
 def test_run_accepts_open_close_only_data_for_non_limit_strategies():
@@ -140,3 +140,16 @@ def test_run_rejects_missing_required_columns():
 
     with pytest.raises(ValueError, match="data is missing required columns"):
         engine.run(data)
+
+
+def test_run_raises_if_liquidation_does_not_close_positions():
+    class BrokenLiquidationBroker(Broker):
+        def liquidate_positions(self):  # type: ignore[override]
+            return None
+
+    broker = BrokenLiquidationBroker()
+    strategy = BuyOnceStrategy(broker)
+    engine = Engine(broker=broker, strategy=strategy)
+
+    with pytest.raises(RuntimeError, match="failed to liquidate all positions"):
+        engine.run(_build_valid_data())
