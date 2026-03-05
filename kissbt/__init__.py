@@ -1,4 +1,4 @@
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import version
 
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
@@ -6,10 +6,7 @@ from kissbt.engine import BacktestResult, Engine
 from kissbt.entities import ClosedPosition, OpenPosition, Order, OrderType
 from kissbt.strategy import Strategy
 
-try:
-    __version__ = version("kissbt")
-except PackageNotFoundError:
-    __version__ = "0.0.0"
+__version__ = version("kissbt")
 
 __all__ = [
     "Analyzer",
