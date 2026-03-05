@@ -59,6 +59,7 @@ class Broker:
         self._open_positions: dict[str, OpenPosition] = {}
         self._closed_positions: list[ClosedPosition] = []
         self._open_orders: list[Order] = []
+        self._events: list[dict[str, object]] = []
 
         self._current_bar: pd.DataFrame = pd.DataFrame()
         self._current_timestamp: pd.Timestamp | None = None
@@ -82,6 +83,17 @@ class Broker:
         }
         if benchmark is not None:
             self._history["benchmark"] = []
+
+    def _record_event(
+        self,
+        event_type: str,
+        timestamp: pd.Timestamp | None,
+        **payload: object,
+    ) -> None:
+        """Append a structured event for machine-friendly downstream processing."""
+        event: dict[str, object] = {"type": event_type, "timestamp": timestamp}
+        event.update(payload)
+        self._events.append(event)
 
     def _update_history(self):
         """
@@ -148,6 +160,15 @@ class Broker:
                 else:
                     return None
         elif order.order_type == OrderType.LIMIT:
+            required_limit_columns = {"open", "high", "low"}
+            missing_limit_columns = sorted(
+                required_limit_columns.difference(bar.columns)
+            )
+            if missing_limit_columns:
+                raise ValueError(
+                    "LIMIT orders require market data columns: "
+                    + ", ".join(f"'{column}'" for column in missing_limit_columns)
+                )
             if order.size > 0.0 and bar.loc[ticker, "low"] <= order.limit:
                 return min(bar.loc[ticker, "open"], order.limit)
             elif order.size < 0.0 and bar.loc[ticker, "high"] >= order.limit:
@@ -300,6 +321,12 @@ class Broker:
         ticker = order.ticker
 
         if order.size == 0.0:
+            self._record_event(
+                "order_rejected_zero_size",
+                timestamp,
+                ticker=ticker,
+                order_type=order.order_type.value,
+            )
             return False
 
         if self._long_only:
@@ -309,6 +336,14 @@ class Broker:
 
         # if the order is a limit order and cannot be filled, return
         if price is None:
+            self._record_event(
+                "order_unfilled_price_condition",
+                timestamp,
+                ticker=ticker,
+                size=order.size,
+                order_type=order.order_type.value,
+                limit=order.limit,
+            )
             return False
 
         # update cash for long and short positions
@@ -317,6 +352,14 @@ class Broker:
         self._update_closed_positions(ticker, order.size, price, timestamp)
 
         self._update_open_positions(ticker, order.size, price, timestamp)
+        self._record_event(
+            "order_executed",
+            timestamp,
+            ticker=ticker,
+            size=order.size,
+            order_type=order.order_type.value,
+            price=price,
+        )
 
         return True
 
@@ -389,14 +432,15 @@ class Broker:
         ) - set(self._current_bar.index)
         for open_order in self._open_orders:
             if open_order.ticker in ticker_not_available:
-                if open_order.size > 0:
-                    print(
-                        f"{open_order.ticker} could not be bought on {self._current_timestamp}."  # noqa: E501
-                    )
-                else:
-                    print(
-                        f"{open_order.ticker} could not be sold on {self._current_timestamp}."  # noqa: E501
-                    )
+                side = "buy" if open_order.size > 0 else "sell"
+                self._record_event(
+                    "order_unfilled_ticker_missing",
+                    self._current_timestamp,
+                    ticker=open_order.ticker,
+                    size=open_order.size,
+                    side=side,
+                    order_type=open_order.order_type.value,
+                )
                 continue
             if (
                 not self._execute_order(
@@ -561,6 +605,11 @@ class Broker:
                 Returns a defensive copy to prevent external modifications.
         """
         return self._history.copy()
+
+    @property
+    def events(self) -> list[dict[str, object]]:
+        """Gets recorded structured events from order processing."""
+        return [event.copy() for event in self._events]
 
     @property
     def cash(self) -> float:

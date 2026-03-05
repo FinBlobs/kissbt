@@ -1,43 +1,180 @@
 # kissbt
 
-**kissbt**, the `keep it simple` backtesting framework, is a lightweight and user-friendly Python framework for backtesting trading strategies. It focuses on simplicity, performance, and ease of extensibility while providing essential tools for effective backtesting.
+**kissbt** (keep it simple backtesting) is a lightweight Python framework for strategy backtesting.
+It focuses on a clear API, fast iteration, and practical defaults.
 
 ## Why kissbt?
 
-- **🚀 Lightweight** – Minimal dependencies ensure fast installation and execution.
-- **📖 Simple API** – Lowers the barrier for traders new to backtesting.
-- **🔌 Extensible** – Modular architecture enables easy customization.
-- **📊 Essential Features** – Includes tools for data handling, strategy implementation, and performance evaluation.
-
-## Features
-
-✔️ Object-oriented design for intuitive strategy development
-✔️ Fast execution, even for large universes
-✔️ Supports long and short positions
-✔️ Built-in trade execution, position tracking, and P&L calculation
-✔️ Performance analysis with key trading metrics
-✔️ Backtesting with historical market data
-✔️ Modular components (Strategy, Broker, Engine, Analyzer)
+- Lightweight dependency footprint
+- Simple object model (`Strategy`, `Broker`, `Engine`, `Analyzer`)
+- Supports long-only and long/short workflows
+- Built-in position tracking, P&L accounting, and performance metrics
+- Easy to extend without large framework overhead
 
 ## Installation
 
-You can install `kissbt` using either `pip` or `conda`.
-
-### Using pip
-
-To install `kissbt` via `pip`, run the following command:
+Install with `pip`:
 
 ```sh
 pip install kissbt
 ```
 
-### Using conda
-
-To install `kissbt` via `conda`, run the following command:
+Or with `conda`:
 
 ```sh
 conda install -c conda-forge kissbt
 ```
+
+## Quickstart
+
+```python
+import pandas as pd
+
+from kissbt import Analyzer, Broker, Engine, Order, Strategy
+
+
+class BuyAndHoldOnce(Strategy):
+    def initialize(self) -> None:
+        self.has_bought = False
+
+    def generate_orders(self, current_data, current_timestamp) -> None:
+        if not self.has_bought:
+            self.broker.place_order(Order(ticker="AAPL", size=10))
+            self.has_bought = True
+
+
+index = pd.MultiIndex.from_tuples(
+    [
+        (pd.Timestamp("2024-01-01"), "AAPL"),
+        (pd.Timestamp("2024-01-02"), "AAPL"),
+    ],
+    names=["timestamp", "ticker"],
+)
+
+market_data = pd.DataFrame(
+    {
+        "open": [100.0, 101.0],
+        "high": [102.0, 103.0],
+        "low": [99.0, 100.0],
+        "close": [101.0, 102.0],
+    },
+    index=index,
+)
+
+broker = Broker(start_capital=10_000)
+strategy = BuyAndHoldOnce(broker)
+engine = Engine(broker, strategy)
+result = engine.run(market_data)
+
+metrics = Analyzer(broker).get_performance_metrics()
+
+print(result.final_portfolio_value)
+print(metrics["total_return"])
+```
+
+## Input Data Requirements
+
+`Engine.run(data)` expects a pandas `DataFrame` with:
+
+- MultiIndex named `("timestamp", "ticker")`
+- Required columns: `open`, `close`
+- Additional columns for `LIMIT` orders: `high`, `low`
+
+## Python API
+
+### 1. Define a strategy
+
+```python
+from kissbt import Order, OrderType, Strategy
+
+
+class MyStrategy(Strategy):
+    def generate_orders(self, current_data, current_timestamp) -> None:
+        for ticker in current_data.index:
+            close_price = current_data.loc[ticker, "close"]
+            sma_128 = current_data.loc[ticker, "sma_128"]
+            if close_price > sma_128:
+                self.broker.place_order(
+                    Order(ticker=ticker, size=10, order_type=OrderType.OPEN)
+                )
+```
+
+### 2. Create broker and engine
+
+```python
+from kissbt import Broker, Engine
+
+broker = Broker(start_capital=100000, fees=0.001)
+strategy = MyStrategy(broker)
+engine = Engine(broker, strategy)
+```
+
+### 3. Run backtest
+
+```python
+result = engine.run(market_data)
+```
+
+`result` is a `BacktestResult` with:
+
+- `history`
+- `closed_positions`
+- `final_portfolio_value`
+
+`Engine.run(...)` liquidates all positions at the end of the run. If liquidation
+does not fully close positions, it raises an error.
+
+### 4. Analyze performance
+
+```python
+from kissbt import Analyzer
+
+metrics = Analyzer(broker).get_performance_metrics()
+print(metrics)
+```
+
+## Command Line Usage
+
+The CLI is useful when you want reproducible runs from scripts, CI, or shell workflows.
+
+### Strategy module example
+
+Create a Python module, for example `my_strategies/golden_cross.py`:
+
+```python
+from kissbt import Order, Strategy
+
+
+class GoldenCrossStrategy(Strategy):
+    def generate_orders(self, current_data, current_timestamp) -> None:
+        for ticker in current_data.index:
+            if (
+                current_data.loc[ticker, "sma_128"]
+                >= current_data.loc[ticker, "sma_256"]
+                and ticker not in self.broker.open_positions
+            ):
+                self.broker.place_order(Order(ticker=ticker, size=1))
+```
+
+### Run a backtest from shell
+
+```sh
+kissbt backtest \
+  --input tests/data/tech_stocks.parquet \
+  --strategy my_strategies.golden_cross:GoldenCrossStrategy \
+  --output backtest_result.json
+```
+
+### Output
+
+The command writes a JSON report with:
+
+- `summary`
+- `metrics`
+- `closed_positions`
+- `events`
+
+Non-finite numeric values are normalized to `null` to keep output strict JSON.
 
 ## Development
 
@@ -56,80 +193,18 @@ uv run mypy kissbt tests
 uv run pytest
 ```
 
-## Usage
-
-### 1. Define a Strategy
-
-Create a custom strategy by extending the `Strategy` class and implementing the `generate_orders` method:
-
-```python
-from kissbt.strategy import Strategy
-from kissbt.entities import Order, OrderType
-
-class MyStrategy(Strategy):
-    def generate_orders(self, current_data, current_datetime):
-        # Example: Buy if the close price is above the 128-day SMA
-        for ticker in current_data.index:
-            close_price = current_data.loc[ticker, "close"]
-            sma_128 = current_data.loc[ticker, "sma_128"]
-            if close_price > sma_128:
-                order = Order(ticker=ticker, size=10, order_type=OrderType.OPEN)
-                self.broker.place_order(order)
-```
-
-### 2. Set Up the Broker
-
-Initialize the `Broker` with starting capital, fees, and other parameters:
-
-```python
-from kissbt.broker import Broker
-
-broker = Broker(start_capital=100000, fees=0.001)
-```
-
-### 3. Run the Backtest
-
-Use the `Engine` to run the backtest with your strategy and market data:
-
-```python
-from kissbt.engine import Engine
-import pandas as pd
-
-# Load market data
-data = pd.read_csv('market_data.csv', parse_dates=['date'])
-
-# Initialize strategy and engine
-strategy = MyStrategy(broker)
-engine = Engine(broker, strategy)
-
-# Run the backtest
-engine.run(data)
-```
-
-### 4. Analyze Performance
-
-Use the `Analyzer` to calculate and display performance metrics:
-
-```python
-from kissbt.analyzer import Analyzer
-
-analyzer = Analyzer(broker)
-metrics = analyzer.get_performance_metrics()
-print(metrics)
-```
-
 ## Examples
 
-Check out the `examples` directory for more detailed examples and use cases.
+See the `examples` directory for more complete workflows.
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).
 
 ## Contributing
 
-We welcome contributions! If you have ideas, bug fixes, or feature requests, feel free to open an issue or submit a pull request.
+Contributions are welcome via issues and pull requests.
 
 ## Contact
 
-For any questions or inquiries, please contact Adrian Hasse at adrian.hasse@finblobs.com.
+Adrian Hasse: adrian.hasse@finblobs.com

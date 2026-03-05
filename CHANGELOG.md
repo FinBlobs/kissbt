@@ -10,6 +10,11 @@ This changelog follows the Keep a Changelog style.
   interpreter.
 - Integration dataset validation for required schema and required tickers.
 - `entry_value` and `exit_value` properties on `ClosedPosition`.
+- `BacktestResult` return type from `Engine.run(...)` for structured
+  programmatic consumption.
+- Structured broker event tracking via `Broker.events`.
+- CLI entrypoint: `kissbt backtest`.
+- Top-level package exports in `kissbt.__init__`.
 
 ### Changed
 - `ClosedPosition` now uses `entry_price`, `entry_timestamp`, `exit_price`,
@@ -20,6 +25,13 @@ This changelog follows the Keep a Changelog style.
 - `CHANGELOG.md` and AGENTS release-note process were introduced.
 - `Strategy` now exposes a public `broker` property and `Engine` validates
   strategy/broker instance consistency at initialization.
+- `Engine.run(...)` now validates input data schema explicitly and raises clear
+  actionable errors for invalid inputs.
+- `BacktestResult` now contains only `history`, `closed_positions`, and
+  `final_portfolio_value` to avoid ambiguous end-of-run state fields.
+- README now includes a full in-memory example and CLI usage example.
+- `AGENTS.md` was revised to define long-lived standards for API discipline,
+  documentation quality, and behavior contracts.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
@@ -31,6 +43,13 @@ This changelog follows the Keep a Changelog style.
   `tests/data/tech_stocks.parquet` as expected by integration tests.
 - Ruff import-ordering behavior is now deterministic across local and CI
   environments.
+- `Engine` now only requires `open`/`close` globally; `high`/`low` are required
+  only when evaluating `LIMIT` orders.
+- `Broker.events` now returns defensive copies of event items.
+- CLI JSON output now normalizes non-finite values to `null` and writes strict
+  JSON.
+- `Engine.run(...)` now raises an explicit error if end-of-run liquidation
+  leaves positions open.
 
 ### Removed
 - Removed legacy `purchase_*` and `selling_*` `ClosedPosition` fields/aliases.
