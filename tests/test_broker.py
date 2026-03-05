@@ -315,6 +315,14 @@ def test_limit_order_execution(broker):
     assert price == 101
 
 
+def test_limit_order_requires_high_low_columns(broker):
+    bar = pd.DataFrame({"open": [100]}, index=["AAPL"])
+    order = Order("AAPL", 10, OrderType.LIMIT, limit=99)
+
+    with pytest.raises(ValueError, match="LIMIT orders require market data columns"):
+        broker._get_price_for_order(order, bar)
+
+
 def test_invalid_order_type(broker):
     order = Order("AAPL", 10, "INVALID")
     bar = pd.DataFrame({"open": [100], "low": [98], "high": [102]}, index=["AAPL"])
@@ -474,3 +482,65 @@ def test_update_ticker_out_of_universe(broker):
     assert closed_pos.exit_price == 500
     assert closed_pos.entry_timestamp == pd.Timestamp(2024, 1, 1)
     assert closed_pos.exit_timestamp == pd.Timestamp(2024, 1, 2)
+
+
+def test_update_records_unfilled_ticker_missing_event(broker):
+    broker.place_order(Order("AAPL", 10, OrderType.OPEN))
+
+    broker.update(
+        pd.DataFrame(
+            {"open": [100], "high": [101], "low": [99], "close": [100]}, index=["MSFT"]
+        ),
+        pd.Timestamp("2024-01-01"),
+    )
+
+    assert len(broker.events) == 1
+    event = broker.events[0]
+    assert event["type"] == "order_unfilled_ticker_missing"
+    assert event["ticker"] == "AAPL"
+    assert event["side"] == "buy"
+
+
+def test_execute_order_records_executed_event(broker):
+    order = Order("AAPL", 1, OrderType.OPEN)
+    bar = pd.DataFrame(
+        {"open": [100.0], "high": [101.0], "low": [99.0], "close": [100.5]},
+        index=["AAPL"],
+    )
+
+    broker._execute_order(order=order, bar=bar, timestamp=pd.Timestamp("2024-01-01"))
+
+    assert len(broker.events) == 1
+    event = broker.events[0]
+    assert event["type"] == "order_executed"
+    assert event["ticker"] == "AAPL"
+    assert event["order_type"] == "open"
+
+
+def test_execute_order_records_price_condition_event_for_unfilled_limit(broker):
+    order = Order("AAPL", 1, OrderType.LIMIT, limit=90.0)
+    bar = pd.DataFrame(
+        {"open": [100.0], "high": [101.0], "low": [99.0], "close": [100.5]},
+        index=["AAPL"],
+    )
+
+    executed = broker._execute_order(
+        order=order, bar=bar, timestamp=pd.Timestamp("2024-01-01")
+    )
+
+    assert not executed
+    assert len(broker.events) == 1
+    event = broker.events[0]
+    assert event["type"] == "order_unfilled_price_condition"
+    assert event["ticker"] == "AAPL"
+
+
+def test_events_property_returns_copy(broker):
+    broker._events.append({"type": "test", "timestamp": pd.Timestamp("2024-01-01")})
+
+    events_copy = broker.events
+    events_copy.append({"type": "mutate", "timestamp": pd.Timestamp("2024-01-01")})
+    events_copy[0]["type"] = "changed"
+
+    assert len(broker.events) == 1
+    assert broker.events[0]["type"] == "test"

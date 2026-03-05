@@ -40,6 +40,9 @@ dev = [
     "pyarrow",
 ]
 
+[project.scripts]
+kissbt = "kissbt.cli:main"
+
 [project.urls]
 homepage = "https://github.com/FinBlobs/kissbt"
 bug-tracker = "https://github.com/FinBlobs/kissbt/issues"
