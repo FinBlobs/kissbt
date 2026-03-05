@@ -291,6 +291,19 @@ def test_benchmark_history_update(broker, mocker):
     assert len(broker.history["benchmark"]) == 1
 
 
+def test_benchmark_history_uses_affordable_shares_and_internal_state():
+    broker = Broker(start_capital=100000, fees=0.001, benchmark="AAPL")
+    broker._current_bar = pd.DataFrame({"close": [100.0]}, index=["AAPL"])
+    broker._current_timestamp = pd.Timestamp("2024-01-01")
+    broker._update_history()
+
+    expected_size = 100000 / (100.0 * (1.0 + 0.001))
+    expected_benchmark_value = 100.0 * expected_size * (1.0 - 0.001)
+
+    assert broker._benchmark_size == pytest.approx(expected_size)
+    assert broker.history["benchmark"][0] == pytest.approx(expected_benchmark_value)
+
+
 def test_limit_order_execution(broker):
     bar = pd.DataFrame({"open": [100], "low": [98], "high": [102]}, index=["AAPL"])
     order = Order("AAPL", 10, OrderType.LIMIT, limit=99)
