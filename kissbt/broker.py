@@ -96,16 +96,13 @@ class Broker:
         )
         self._history["positions"].append(len(self._open_positions))
         if self._benchmark is not None:
+            benchmark_close = self._current_bar.loc[self._benchmark, "close"]
             if len(self._history["benchmark"]) == 0:
-                self.benchmark_size = (
-                    self._start_capital
-                    / self._current_bar.loc[self._benchmark, "close"]
-                    * (1.0 + self._fees)
+                self._benchmark_size = self._start_capital / (
+                    benchmark_close * (1.0 + self._fees)
                 )
             self._history["benchmark"].append(
-                self._current_bar.loc[self._benchmark, "close"]
-                * self.benchmark_size
-                * (1.0 - self._fees)
+                benchmark_close * self._benchmark_size * (1.0 - self._fees)
             )
 
     def _get_price_for_order(self, order: Order, bar: pd.DataFrame) -> float | None:

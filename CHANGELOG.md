@@ -24,6 +24,8 @@ This changelog follows the Keep a Changelog style.
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
   consistent and profitable short closes are treated correctly.
+- Benchmark position sizing now uses affordable shares and internal benchmark
+  state is tracked consistently.
 - CI matrix now pins `uv` to the configured matrix Python version.
 - CI integration dataset artifact is downloaded to
   `tests/data/tech_stocks.parquet` as expected by integration tests.
