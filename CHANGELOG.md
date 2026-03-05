@@ -30,6 +30,8 @@ This changelog follows the Keep a Changelog style.
 - `BacktestResult` now contains only `history`, `closed_positions`, and
   `final_portfolio_value` to avoid ambiguous end-of-run state fields.
 - README now includes a full in-memory example and CLI usage example.
+- `AGENTS.md` was revised to define long-lived standards for API discipline,
+  documentation quality, and behavior contracts.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
