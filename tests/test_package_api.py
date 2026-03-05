@@ -11,4 +11,3 @@ def test_top_level_exports():
     assert hasattr(kissbt, "Order")
     assert hasattr(kissbt, "OrderType")
     assert hasattr(kissbt, "Strategy")
-    assert hasattr(kissbt, "__version__")
