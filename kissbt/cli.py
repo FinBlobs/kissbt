@@ -38,6 +38,17 @@ def _sanitize_for_json(value: Any) -> Any:
     return value
 
 
+def _read_parquet(input_path: Path) -> pd.DataFrame:
+    try:
+        return pd.read_parquet(input_path)
+    except ImportError as exc:
+        raise ValueError(
+            "failed to read parquet input data from "
+            f"'{input_path}': install 'pyarrow' or use the "
+            "'kissbt[parquet]' extra"
+        ) from exc
+
+
 def _load_market_data(input_path: Path, input_format: str) -> pd.DataFrame:
     detected_format = input_format
     if detected_format == "auto":
@@ -48,7 +59,7 @@ def _load_market_data(input_path: Path, input_format: str) -> pd.DataFrame:
 
     try:
         if detected_format == "parquet":
-            data = pd.read_parquet(input_path)
+            data = _read_parquet(input_path)
         elif detected_format == "csv":
             data = pd.read_csv(input_path)
         else:

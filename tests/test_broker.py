@@ -538,6 +538,33 @@ def test_update_records_unfilled_ticker_missing_event(broker):
     assert event["type"] == "order_unfilled_ticker_missing"
     assert event["ticker"] == "AAPL"
     assert event["side"] == "buy"
+    assert broker._open_orders == []
+
+
+def test_update_retains_good_till_cancel_order_when_ticker_missing(broker):
+    order = Order("AAPL", 10, OrderType.OPEN, good_till_cancel=True)
+    broker.place_order(order)
+
+    broker.update(
+        pd.DataFrame(
+            {"open": [100], "high": [101], "low": [99], "close": [100]}, index=["MSFT"]
+        ),
+        pd.Timestamp("2024-01-01"),
+    )
+
+    assert broker.events[0]["type"] == "order_unfilled_ticker_missing"
+    assert broker._open_orders == [order]
+
+    broker.update(
+        pd.DataFrame(
+            {"open": [110], "high": [111], "low": [109], "close": [110]},
+            index=["AAPL"],
+        ),
+        pd.Timestamp("2024-01-02"),
+    )
+
+    assert broker._open_orders == []
+    assert broker.open_positions["AAPL"].size == 10
 
 
 def test_execute_order_records_executed_event(broker):

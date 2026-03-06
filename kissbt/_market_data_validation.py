@@ -24,7 +24,7 @@ def validate_market_data_frame(
         )
 
     names = list(data.index.names)
-    if len(names) < 2 or names[0] != "timestamp" or names[1] != "ticker":
+    if len(names) != 2 or names != ["timestamp", "ticker"]:
         raise ValueError(
             f"{context} index must be a MultiIndex named ['timestamp', 'ticker']"
         )

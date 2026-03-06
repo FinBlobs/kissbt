@@ -132,6 +132,23 @@ def test_run_rejects_wrong_multiindex_names():
         engine.run(data)
 
 
+def test_run_rejects_extra_multiindex_level():
+    broker = Broker()
+    strategy = DummyStrategy(broker)
+    engine = Engine(broker=broker, strategy=strategy)
+    data = _build_valid_data().copy()
+    data.index = pd.MultiIndex.from_tuples(
+        [
+            (pd.Timestamp("2024-01-01"), "AAPL", "XNAS"),
+            (pd.Timestamp("2024-01-02"), "AAPL", "XNAS"),
+        ],
+        names=["timestamp", "ticker", "exchange"],
+    )
+
+    with pytest.raises(ValueError, match="data index must be a MultiIndex"):
+        engine.run(data)
+
+
 def test_run_rejects_missing_required_columns():
     broker = Broker()
     strategy = DummyStrategy(broker)
