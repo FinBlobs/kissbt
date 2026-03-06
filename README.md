@@ -1,15 +1,20 @@
 # kissbt
 
-**kissbt** (keep it simple backtesting) is a lightweight Python framework for strategy backtesting.
-It focuses on a clear API, fast iteration, and practical defaults.
+**kissbt** ("keep it simple backtesting") is a small Python backtesting framework for
+people who want clear execution semantics, a compact API, and deterministic CLI output.
+It is built for pandas-based strategy research, scripted backtest runs, and machine-friendly
+result handling without the weight of a large framework. It stays comfortable for simple
+single-asset ideas, but is also flexible enough for multi-asset and whole-universe workflows.
 
 ## Why kissbt?
 
-- Lightweight dependency footprint
-- Simple object model (`Strategy`, `Broker`, `Engine`, `Analyzer`)
+- Small public API: `Strategy`, `Broker`, `Engine`, `Analyzer`
+- Clear next-bar execution model with explicit `OPEN`, `CLOSE`, and `LIMIT` behavior
+- Works directly with pandas `DataFrame` input using `("timestamp", "ticker")` MultiIndex data
+- Flexible enough for single-asset, multi-asset, and whole-universe strategies
 - Supports long-only and long/short workflows
-- Built-in position tracking, P&L accounting, and performance metrics
-- Easy to extend without large framework overhead
+- Structured backtest results for Python code and deterministic JSON output for shell/CI/agents
+- Fails fast on invalid inputs instead of silently guessing
 
 ## Installation
 
@@ -19,18 +24,28 @@ Install with `pip`:
 pip install kissbt
 ```
 
+Install with `uv`:
+
+```sh
+uv add kissbt
+```
+
 Or with `conda`:
 
 ```sh
 conda install -c conda-forge kissbt
 ```
 
+Supported Python versions: `3.12` to `3.14`.
+
 ## Quickstart
+
+This example is intentionally small enough to verify by inspection.
 
 ```python
 import pandas as pd
 
-from kissbt import Analyzer, Broker, Engine, Order, Strategy
+from kissbt import Broker, Engine, Order, Strategy
 
 
 class BuyAndHoldOnce(Strategy):
@@ -66,21 +81,26 @@ strategy = BuyAndHoldOnce(broker)
 engine = Engine(broker, strategy)
 result = engine.run(market_data)
 
-metrics = Analyzer(broker).get_performance_metrics()
-
-print(result.final_portfolio_value)
-print(metrics["total_return"])
+trade = result.closed_positions[0]
+print(trade.entry_price)
+print(trade.exit_price)
+print(round(result.final_portfolio_value, 2))
 ```
 
-## Input Data Requirements
+Expected output:
 
-`Engine.run(data)` expects a pandas `DataFrame` with:
+```text
+101.0
+102.0
+10007.97
+```
 
-- MultiIndex named `("timestamp", "ticker")`
-- Unique `("timestamp", "ticker")` rows
-- Required columns: `open`, `close`
-- Additional columns for `LIMIT` orders: `high`, `low`
-- If `Broker(benchmark=...)` is configured, the benchmark ticker must be present for every timestamp
+Why those numbers:
+
+- The order is placed on `2024-01-01`
+- It executes on the next bar at the `2024-01-02` `open` price of `101.0`
+- `Engine.run(...)` liquidates the remaining position on the final bar at the same day's `close` price of `102.0`
+- With the default `0.1%` fee on entry and exit, final portfolio value becomes `10007.97`
 
 ## Execution Model
 
@@ -98,9 +118,34 @@ Two additional behaviors matter in practice:
 - If a held ticker disappears from the current universe, `Broker.update(...)` closes it at the previous bar `close`
 - Good-till-cancel orders remain pending until they fill or the run ends
 
+## Input Data Requirements
+
+`Engine.run(data)` expects a pandas `DataFrame` with:
+
+- MultiIndex named `("timestamp", "ticker")`
+- Unique `("timestamp", "ticker")` rows
+- Required columns: `open`, `close`
+- Additional columns for `LIMIT` orders: `high`, `low`
+- If `Broker(benchmark=...)` is configured, the benchmark ticker must be present for every timestamp
+
+If your input is not already indexed, the CLI also accepts CSV or Parquet files with
+`timestamp` and `ticker` columns and converts them into the required MultiIndex shape.
+
+## Flexible Strategy Workflows
+
+Each call to `Strategy.generate_orders(...)` receives the full bar for the current
+timestamp as a `DataFrame` indexed by ticker. That makes it natural to:
+
+- Run a single instrument strategy
+- Scan a watchlist of symbols
+- Rank, filter, or rebalance across a whole universe on each bar
+
+You can keep the strategy logic small, or prepare richer indicator columns in pandas
+before calling `Engine.run(...)`.
+
 ## Python API
 
-### 1. Define a strategy
+Define a strategy:
 
 ```python
 from kissbt import Order, OrderType, Strategy
@@ -117,7 +162,10 @@ class MyStrategy(Strategy):
                 )
 ```
 
-### 2. Create broker and engine
+`current_data` is the full cross-section for the current timestamp, so the same strategy
+shape works for one ticker, a small basket, or a full universe.
+
+Create a broker and engine, then run the backtest:
 
 ```python
 from kissbt import Broker, Engine
@@ -125,11 +173,6 @@ from kissbt import Broker, Engine
 broker = Broker(start_capital=100000, fees=0.001)
 strategy = MyStrategy(broker)
 engine = Engine(broker, strategy)
-```
-
-### 3. Run backtest
-
-```python
 result = engine.run(market_data)
 ```
 
@@ -139,28 +182,23 @@ result = engine.run(market_data)
 - `closed_positions`
 - `final_portfolio_value`
 
-`Engine.run(...)` liquidates all positions at the end of the run. If liquidation
-does not fully close positions, it raises an error.
-
-### 4. Analyze performance
+Analyze performance after the broker has processed at least one bar:
 
 ```python
 from kissbt import Analyzer
 
 metrics = Analyzer(broker).get_performance_metrics()
-print(metrics)
+print(metrics["total_return"])
 ```
 
-`Analyzer(...)` expects non-empty broker history, so construct it after the
-broker has processed at least one bar.
+## CLI And Automation
 
-## Command Line Usage
+The CLI is designed for shell scripts, CI jobs, and agent workflows that need strict,
+machine-consumable output.
 
-The CLI is useful when you want reproducible runs from scripts, CI, or shell workflows.
+### Run a backtest
 
-### Strategy module example
-
-Create a Python module, for example `my_strategies/golden_cross.py`:
+Create a strategy module, for example `my_strategies/golden_cross.py`:
 
 ```python
 from kissbt import Order, Strategy
@@ -177,16 +215,41 @@ class GoldenCrossStrategy(Strategy):
                 self.broker.place_order(Order(ticker=ticker, size=1))
 ```
 
-### Run a backtest from shell
+Write JSON to a file:
 
 ```sh
 kissbt backtest \
   --input tests/data/tech_stocks.parquet \
   --strategy my_strategies.golden_cross:GoldenCrossStrategy \
+  --benchmark SPY \
   --output backtest_result.json
 ```
 
-### Output
+Or write JSON to stdout:
+
+```sh
+kissbt backtest \
+  --input tests/data/tech_stocks.parquet \
+  --strategy my_strategies.golden_cross:GoldenCrossStrategy
+```
+
+Useful flags:
+
+- `--input-format auto|csv|parquet`
+- `--start-capital 100000`
+- `--fees 0.001`
+- `--allow-short`
+- `--short-fee-rate 0.005`
+- `--benchmark SPY`
+- `--bar-size 1D`
+
+Failure behavior:
+
+- Invalid inputs exit with a non-zero status
+- Errors are printed as concise user-facing messages
+- Non-finite numeric values in JSON are normalized to `null`
+
+### JSON output contract
 
 The command writes a JSON report with:
 
@@ -195,14 +258,15 @@ The command writes a JSON report with:
 - `closed_positions`
 - `events`
 
-Non-finite numeric values are normalized to `null` to keep output strict JSON.
-
-`summary` currently contains:
+`summary` contains:
 
 - `bars`
 - `final_portfolio_value`
 - `closed_positions`
 - `events`
+
+Timestamps are emitted in ISO 8601 format. Field names are deterministic so the output
+is stable for downstream scripts and automation.
 
 Example shape:
 
@@ -242,6 +306,19 @@ Example shape:
 }
 ```
 
+## When kissbt is a good fit
+
+`kissbt` is a good fit if you want:
+
+- A Python backtesting engine that stays easy to read end-to-end
+- pandas-first research workflows over OHLC or indicator-enriched data
+- Flexible strategies that scale from one instrument to a whole universe
+- Reproducible batch backtests from the command line
+- Deterministic JSON output for automation, reporting, or agent orchestration
+
+It is probably not the right tool if you want a large built-in ecosystem, live trading
+connectors, or a framework that hides the execution model behind many abstractions.
+
 ## Development
 
 For development, this repository uses `uv`.
@@ -258,19 +335,3 @@ uv run ruff check .
 uv run mypy kissbt tests
 uv run pytest
 ```
-
-## Examples
-
-See the `examples` directory for more complete workflows.
-
-## License
-
-This project is licensed under Apache License 2.0. See [LICENSE](LICENSE).
-
-## Contributing
-
-Contributions are welcome via issues and pull requests.
-
-## Contact
-
-Adrian Hasse: adrian.hasse@finblobs.com

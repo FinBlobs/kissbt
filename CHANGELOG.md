@@ -36,6 +36,10 @@ This changelog follows the Keep a Changelog style.
   documentation quality, and behavior contracts.
 - README now documents execution semantics, benchmark requirements, and the
   CLI JSON report shape more explicitly.
+- README landing page, quickstart, and CLI sections were rewritten for clearer
+  release UX, stronger automation guidance, better project discoverability,
+  and more explicit coverage of flexible single-asset to whole-universe
+  workflows.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
