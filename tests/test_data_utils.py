@@ -3,7 +3,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.conftest import tech_stock_data as _fixture_tech_stock_data
+from tests.conftest import (
+    TEST_DATA_DOWNLOAD_ENV_VAR,
+)
+from tests.conftest import (
+    tech_stock_data as _fixture_tech_stock_data,
+)
 from tests.data_utils import (
     TECH_STOCK_TICKERS,
     load_tech_stock_data,
@@ -41,12 +46,47 @@ def test_tech_stock_data_fixture_fails_fast_when_explicit_path_missing(
 ):
     missing_path = tmp_path / "missing.parquet"
     monkeypatch.setenv("TECH_STOCK_DATA_PATH", str(missing_path))
+    monkeypatch.delenv(TEST_DATA_DOWNLOAD_ENV_VAR, raising=False)
     fixture_fn = getattr(
         _fixture_tech_stock_data, "__wrapped__", _fixture_tech_stock_data
     )
 
     with pytest.raises(FileNotFoundError, match="Expected integration dataset"):
         fixture_fn()
+
+
+def test_tech_stock_data_fixture_disables_download_by_default(
+    monkeypatch: pytest.MonkeyPatch, mocker
+):
+    monkeypatch.delenv("TECH_STOCK_DATA_PATH", raising=False)
+    monkeypatch.delenv(TEST_DATA_DOWNLOAD_ENV_VAR, raising=False)
+    load_data = mocker.patch("tests.conftest.load_tech_stock_data", return_value="ok")
+    fixture_fn = getattr(
+        _fixture_tech_stock_data, "__wrapped__", _fixture_tech_stock_data
+    )
+
+    assert fixture_fn() == "ok"
+    load_data.assert_called_once_with(
+        data_path="tests/data/tech_stocks.parquet",
+        allow_download=False,
+    )
+
+
+def test_tech_stock_data_fixture_allows_explicit_download_opt_in(
+    monkeypatch: pytest.MonkeyPatch, mocker
+):
+    monkeypatch.delenv("TECH_STOCK_DATA_PATH", raising=False)
+    monkeypatch.setenv(TEST_DATA_DOWNLOAD_ENV_VAR, "1")
+    load_data = mocker.patch("tests.conftest.load_tech_stock_data", return_value="ok")
+    fixture_fn = getattr(
+        _fixture_tech_stock_data, "__wrapped__", _fixture_tech_stock_data
+    )
+
+    assert fixture_fn() == "ok"
+    load_data.assert_called_once_with(
+        data_path="tests/data/tech_stocks.parquet",
+        allow_download=True,
+    )
 
 
 def test_validate_market_data_requires_all_columns():

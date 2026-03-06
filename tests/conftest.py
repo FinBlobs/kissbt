@@ -7,14 +7,18 @@ from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from tests.data_utils import load_tech_stock_data
 
+TEST_DATA_DOWNLOAD_ENV_VAR = "KISSBT_ALLOW_TEST_DATA_DOWNLOAD"
+
 
 @pytest.fixture(scope="session")
 def tech_stock_data():
     """
     Load tech stock data for integration tests.
+
+    Dataset download is opt-in via KISSBT_ALLOW_TEST_DATA_DOWNLOAD=1.
     """
     data_path = os.getenv("TECH_STOCK_DATA_PATH", "tests/data/tech_stocks.parquet")
-    allow_download = "TECH_STOCK_DATA_PATH" not in os.environ
+    allow_download = os.getenv(TEST_DATA_DOWNLOAD_ENV_VAR) == "1"
     return load_tech_stock_data(data_path=data_path, allow_download=allow_download)
 
 

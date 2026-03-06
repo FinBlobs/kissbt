@@ -39,11 +39,14 @@ def test_execute_order(broker, mocker):
     assert len(broker.open_positions) == 1
 
 
-def test_get_price_for_order(broker, mocker):
-    mocker.patch.object(broker, "_get_price_for_order", return_value=150.0)
-    order = Order("AAPL", 5, OrderType.LIMIT, 145.0)
-    price = broker._get_price_for_order(order)
-    assert price == 150.0
+def test_get_price_for_order_uses_open_and_close_prices(broker):
+    bar = pd.DataFrame({"open": [150.0], "close": [152.0]}, index=["AAPL"])
+
+    open_price = broker._get_price_for_order(Order("AAPL", 5, OrderType.OPEN), bar)
+    close_price = broker._get_price_for_order(Order("AAPL", -5, OrderType.CLOSE), bar)
+
+    assert open_price == 150.0
+    assert close_price == 152.0
 
 
 def test_update_open_positions(broker):
@@ -456,6 +459,11 @@ def test_history_copy(broker):
     history_copy = broker.history
     assert history_copy == broker._history
     assert history_copy is not broker._history  # Ensure it's a copy
+    assert history_copy["cash"] is not broker._history["cash"]
+
+    history_copy["cash"].append(123.0)
+
+    assert broker._history["cash"] == []
 
 
 def test_update_cash(broker):
