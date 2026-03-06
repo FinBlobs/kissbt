@@ -5,21 +5,6 @@ from collections.abc import Iterable
 import pandas as pd
 
 
-def normalize_market_data_index_names(data: pd.DataFrame) -> pd.DataFrame:
-    """Normalize common index naming differences across supported inputs."""
-    if not isinstance(data.index, pd.MultiIndex):
-        return data
-
-    names = list(data.index.names)
-    if len(names) < 2 or names[0] != "date":
-        return data
-
-    normalized = data.copy()
-    names[0] = "timestamp"
-    normalized.index = normalized.index.set_names(names)
-    return normalized
-
-
 def validate_market_data_frame(
     data: pd.DataFrame,
     *,

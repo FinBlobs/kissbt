@@ -4,10 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from kissbt._market_data import (
-    normalize_market_data_index_names,
-    validate_market_data_frame,
-)
+from kissbt._market_data import validate_market_data_frame
 
 TECH_STOCK_TICKERS: tuple[str, ...] = (
     "AAPL",
@@ -31,11 +28,6 @@ START_DATE = "2020-01-01"
 END_DATE = "2024-12-31"
 TRIM_START_DATE = "2022-01-01"
 TRIM_END_DATE = "2024-12-31"
-
-
-def normalize_market_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize index naming conventions across parquet/yfinance sources."""
-    return normalize_market_data_index_names(df)
 
 
 def validate_market_data(df: pd.DataFrame) -> None:
@@ -103,6 +95,5 @@ def load_tech_stock_data(data_path: str, allow_download: bool) -> pd.DataFrame:
     else:
         raise FileNotFoundError(f"Expected integration dataset at {path}.")
 
-    df = normalize_market_data(df)
     validate_market_data(df)
     return df
