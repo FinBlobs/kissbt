@@ -40,6 +40,8 @@ This changelog follows the Keep a Changelog style.
   release UX, stronger automation guidance, better project discoverability,
   and more explicit coverage of flexible single-asset to whole-universe
   workflows.
+- Added an optional `parquet` extra for installing `pyarrow` alongside the
+  base package.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
@@ -65,6 +67,12 @@ This changelog follows the Keep a Changelog style.
   JSON.
 - `Engine.run(...)` now raises an explicit error if end-of-run liquidation
   leaves positions open.
+- Good-till-cancel orders now remain pending when a ticker is temporarily
+  missing from the current bar instead of being dropped immediately.
+- Engine/CLI market-data validation now rejects MultiIndex inputs with extra
+  levels instead of accepting shapes the broker cannot process.
+- CLI parquet input now fails with a clean actionable error when no parquet
+  engine is installed.
 
 ### Removed
 - Removed legacy `purchase_*` and `selling_*` `ClosedPosition` fields/aliases.

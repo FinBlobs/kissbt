@@ -441,11 +441,9 @@ class Broker:
 
         # buy and sell assets
         remaining_open_orders = []
-        ticker_not_available = set(
-            [open_order.ticker for open_order in self._open_orders]
-        ) - set(self._current_bar.index)
+        current_tickers = set(self._current_bar.index)
         for open_order in self._open_orders:
-            if open_order.ticker in ticker_not_available:
+            if open_order.ticker not in current_tickers:
                 side = "buy" if open_order.size > 0 else "sell"
                 self._record_event(
                     "order_unfilled_ticker_missing",
@@ -455,6 +453,8 @@ class Broker:
                     side=side,
                     order_type=open_order.order_type.value,
                 )
+                if open_order.good_till_cancel:
+                    remaining_open_orders.append(open_order)
                 continue
             if (
                 not self._execute_order(

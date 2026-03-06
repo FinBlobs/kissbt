@@ -24,6 +24,12 @@ Install with `pip`:
 pip install kissbt
 ```
 
+Install with parquet support:
+
+```sh
+pip install "kissbt[parquet]"
+```
+
 Install with `uv`:
 
 ```sh
@@ -116,13 +122,13 @@ Why those numbers:
 Two additional behaviors matter in practice:
 
 - If a held ticker disappears from the current universe, `Broker.update(...)` closes it at the previous bar `close`
-- Good-till-cancel orders remain pending until they fill or the run ends
+- Good-till-cancel orders remain pending across later bars when unfilled, including when a ticker is temporarily missing
 
 ## Input Data Requirements
 
 `Engine.run(data)` expects a pandas `DataFrame` with:
 
-- MultiIndex named `("timestamp", "ticker")`
+- Exactly two index levels named `("timestamp", "ticker")`
 - Unique `("timestamp", "ticker")` rows
 - Required columns: `open`, `close`
 - Additional columns for `LIMIT` orders: `high`, `low`
@@ -232,6 +238,9 @@ kissbt backtest \
   --input tests/data/tech_stocks.parquet \
   --strategy my_strategies.golden_cross:GoldenCrossStrategy
 ```
+
+Parquet input requires an installed parquet engine such as `pyarrow`. The
+`kissbt[parquet]` extra installs that dependency for you.
 
 Useful flags:
 

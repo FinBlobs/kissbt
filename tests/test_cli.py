@@ -162,3 +162,34 @@ def test_cli_backtest_prints_clean_error_for_invalid_csv(tmp_path, capsys):
     assert exc_info.value.code == 1
     assert "Error: failed to parse CSV input data from" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_cli_backtest_prints_clean_error_for_missing_parquet_engine(
+    tmp_path, monkeypatch, capsys
+):
+    parquet_path = tmp_path / "market_data.parquet"
+    parquet_path.write_bytes(b"PAR1")
+
+    def _raise_missing_engine(_path):
+        raise ImportError("Unable to find a usable engine")
+
+    monkeypatch.setattr(pd, "read_parquet", _raise_missing_engine)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                "backtest",
+                "--input",
+                str(parquet_path),
+                "--input-format",
+                "parquet",
+                "--strategy",
+                "unused:Strategy",
+            ]
+        )
+
+    captured = capsys.readouterr()
+    assert exc_info.value.code == 1
+    assert "Error: failed to read parquet input data from" in captured.err
+    assert "kissbt[parquet]" in captured.err
+    assert "Traceback" not in captured.err

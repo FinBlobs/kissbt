@@ -339,6 +339,9 @@ dev = [
     { name = "ruff" },
     { name = "yfinance" },
 ]
+parquet = [
+    { name = "pyarrow" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -347,13 +350,14 @@ requires-dist = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "pyarrow", marker = "extra == 'dev'" },
+    { name = "pyarrow", marker = "extra == 'parquet'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-mock", marker = "extra == 'dev'" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scipy" },
     { name = "yfinance", marker = "extra == 'dev'" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["parquet", "dev"]
 
 [[package]]
 name = "kiwisolver"
