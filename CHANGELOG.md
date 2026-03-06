@@ -19,6 +19,8 @@ This changelog follows the Keep a Changelog style.
 ### Changed
 - `ClosedPosition` now uses `entry_price`, `entry_timestamp`, `exit_price`,
   `exit_timestamp` as canonical trade lifecycle fields.
+- Package metadata now uses SPDX license metadata compatible with current
+  setuptools packaging guidance.
 - Analyzer win-rate and profit-factor calculations now use
   `ClosedPosition.pnl`.
 - `Broker.history` now returns copies of its value lists instead of exposing
