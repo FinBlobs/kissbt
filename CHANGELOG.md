@@ -21,6 +21,8 @@ This changelog follows the Keep a Changelog style.
   `exit_timestamp` as canonical trade lifecycle fields.
 - Analyzer win-rate and profit-factor calculations now use
   `ClosedPosition.pnl`.
+- `Broker.history` now returns copies of its value lists instead of exposing
+  live internal buffers.
 - CI integration dataset preparation now uses shared test utility code.
 - `CHANGELOG.md` and AGENTS release-note process were introduced.
 - `Strategy` now exposes a public `broker` property and `Engine` validates
@@ -40,6 +42,9 @@ This changelog follows the Keep a Changelog style.
   consistent and profitable short closes are treated correctly.
 - Benchmark position sizing now uses affordable shares and internal benchmark
   state is tracked consistently.
+- CLI backtest output now sanitizes NumPy scalar values for JSON, prints
+  concise user-facing errors for invalid inputs, and creates parent
+  directories for `--output` paths.
 - CI matrix now pins `uv` to the configured matrix Python version.
 - CI integration dataset artifact is downloaded to
   `tests/data/tech_stocks.parquet` as expected by integration tests.

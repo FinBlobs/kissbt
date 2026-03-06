@@ -604,22 +604,22 @@ class Broker:
         return self._closed_positions.copy()
 
     @property
-    def history(self) -> dict[str, list[float]]:
+    def history(self) -> dict[str, list[float | int | pd.Timestamp]]:
         """Gets the historical performance metrics dictionary.
 
         Contains time series data tracking portfolio metrics:
         - 'cash': Available cash balance
-        - 'portfolio': Total portfolio value
-        - 'short_value': Value of short positions
-        - 'long_value': Value of long positions
+        - 'long_position_value': Total long exposure after fees
+        - 'short_position_value': Total short exposure including fees
+        - 'total_value': Total portfolio value
+        - 'positions': Number of open positions
         - 'benchmark': Benchmark performance if specified
 
         Returns:
-            Dict[str, List[float | int | pd.Timestamp]]: Shallow copy of the top-level
-                history mapping. The contained lists are live history buffers and
-                should be treated as read-only outside controlled test/setup code.
+            Dict[str, List[float | int | pd.Timestamp]]: Copy of the history mapping
+                and its value lists to prevent external mutation of broker state.
         """
-        return self._history.copy()
+        return {key: values.copy() for key, values in self._history.items()}
 
     @property
     def events(self) -> list[dict[str, object]]:

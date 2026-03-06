@@ -7,6 +7,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from kissbt._market_data_validation import validate_market_data_frame
@@ -24,6 +25,10 @@ def _sanitize_for_json(value: Any) -> Any:
         return [_sanitize_for_json(item) for item in value]
     if isinstance(value, tuple):
         return [_sanitize_for_json(item) for item in value]
+    if isinstance(value, np.generic):
+        return _sanitize_for_json(value.item())
+    if value is pd.NA or value is pd.NaT:
+        return None
     if isinstance(value, float) and not math.isfinite(value):
         return None
     if isinstance(value, pd.Timestamp):
@@ -41,12 +46,23 @@ def _load_market_data(input_path: Path, input_format: str) -> pd.DataFrame:
         else:
             detected_format = "csv"
 
-    if detected_format == "parquet":
-        data = pd.read_parquet(input_path)
-    elif detected_format == "csv":
-        data = pd.read_csv(input_path)
-    else:
-        raise ValueError(f"Unsupported input format: {detected_format}")
+    try:
+        if detected_format == "parquet":
+            data = pd.read_parquet(input_path)
+        elif detected_format == "csv":
+            data = pd.read_csv(input_path)
+        else:
+            raise ValueError(f"Unsupported input format: {detected_format}")
+    except FileNotFoundError as exc:
+        raise ValueError(f"input file does not exist: {input_path}") from exc
+    except pd.errors.ParserError as exc:
+        raise ValueError(
+            f"failed to parse CSV input data from '{input_path}': {exc}"
+        ) from exc
+    except OSError as exc:
+        raise ValueError(
+            f"failed to read input data from '{input_path}': {exc}"
+        ) from exc
 
     if not isinstance(data.index, pd.MultiIndex):
         required_columns = {"timestamp", "ticker"}
@@ -73,7 +89,12 @@ def _load_strategy_class(strategy_spec: str) -> type[Strategy]:
         raise ValueError("strategy must be in format 'module:ClassName'")
     module_name, class_name = strategy_spec.split(":", maxsplit=1)
 
-    module = importlib.import_module(module_name)
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as exc:
+        raise ValueError(
+            f"could not import strategy module '{module_name}': {exc}"
+        ) from exc
     strategy_class = getattr(module, class_name, None)
     if strategy_class is None:
         raise ValueError(
@@ -172,13 +193,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "backtest":
-        payload = _sanitize_for_json(_run_backtest(args))
-        json_output = json.dumps(payload, indent=2, allow_nan=False)
-        if args.output:
-            Path(args.output).write_text(json_output + "\n", encoding="utf-8")
-        else:
-            print(json_output)
-        return 0
+        try:
+            payload = _sanitize_for_json(_run_backtest(args))
+            json_output = json.dumps(payload, indent=2, allow_nan=False)
+            if args.output:
+                output_path = Path(args.output)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(json_output + "\n", encoding="utf-8")
+            else:
+                print(json_output)
+            return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            parser.exit(1, f"Error: {exc}\n")
 
     parser.error(f"Unsupported command: {args.command}")
     return 2
