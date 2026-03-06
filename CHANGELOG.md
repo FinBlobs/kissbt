@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 This changelog follows the Keep a Changelog style.
 
 ## [Unreleased]
+
+## [0.1.7] - 2026-03-06
 ### Added
 - Regression tests for full and partial short position closes.
 - Explicit CI assertion that each matrix job runs with the expected Python
@@ -115,7 +117,8 @@ This changelog follows the Keep a Changelog style.
 ### Added
 - Initial public release of `kissbt`.
 
-[Unreleased]: https://github.com/FinBlobs/kissbt/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/FinBlobs/kissbt/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/FinBlobs/kissbt/releases/tag/v0.1.7
 [0.1.6]: https://github.com/FinBlobs/kissbt/releases/tag/v0.1.6
 [0.1.5]: https://github.com/FinBlobs/kissbt/releases/tag/v0.1.5
 [0.1.4]: https://github.com/FinBlobs/kissbt/releases/tag/v0.1.4
