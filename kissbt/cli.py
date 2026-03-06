@@ -9,7 +9,7 @@ from typing import Any
 
 import pandas as pd
 
-from kissbt._market_data import validate_market_data_frame
+from kissbt._market_data_validation import validate_market_data_frame
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from kissbt.engine import Engine

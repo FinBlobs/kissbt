@@ -2,7 +2,10 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from kissbt._market_data import validate_benchmark_data, validate_market_data_frame
+from kissbt._market_data_validation import (
+    validate_benchmark_data,
+    validate_market_data_frame,
+)
 from kissbt.broker import Broker
 from kissbt.entities import ClosedPosition
 from kissbt.strategy import Strategy

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from kissbt._market_data import validate_market_data_frame
+from kissbt._market_data_validation import validate_market_data_frame
 
 TECH_STOCK_TICKERS: tuple[str, ...] = (
     "AAPL",
