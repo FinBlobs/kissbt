@@ -365,6 +365,27 @@ def test_benchmark_initialization():
     assert broker_with_benchmark.history["benchmark"] == []
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "error_match"),
+    [
+        ({"start_capital": 0.0}, "start_capital must be greater than 0"),
+        (
+            {"fees": -0.01},
+            "fees must be between 0 \\(inclusive\\) and 1 \\(exclusive\\)",
+        ),
+        (
+            {"fees": 1.0},
+            "fees must be between 0 \\(inclusive\\) and 1 \\(exclusive\\)",
+        ),
+        ({"short_fee_rate": -0.01}, "short_fee_rate must be non-negative"),
+        ({"benchmark": "   "}, "benchmark must not be empty"),
+    ],
+)
+def test_broker_rejects_invalid_configuration(kwargs, error_match):
+    with pytest.raises(ValueError, match=error_match):
+        Broker(**kwargs)
+
+
 def test_get_price_for_order_with_limit(broker):
     bar = pd.DataFrame({"open": [100], "low": [98], "high": [102]}, index=["AAPL"])
     order = Order("AAPL", 10, OrderType.OPEN)
@@ -379,6 +400,16 @@ def test_update_history_with_benchmark(broker, mocker):
     broker._history["benchmark"] = []
     broker._update_history()
     assert len(broker.history["benchmark"]) == 1
+
+
+def test_update_history_requires_benchmark_in_current_bar(broker):
+    broker._benchmark = "SPY"
+    broker._history["benchmark"] = []
+    broker._current_bar = pd.DataFrame({"close": [150]}, index=["AAPL"])
+    broker._current_timestamp = pd.Timestamp("2024-01-01")
+
+    with pytest.raises(ValueError, match="benchmark ticker 'SPY' is missing"):
+        broker._update_history()
 
 
 def test_broker_initializes_with_benchmark():

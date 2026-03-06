@@ -26,7 +26,8 @@ class Analyzer:
         time interval of each bar in the data.
 
         Parameters:
-            broker (Broker): The broker instance containing the trading history.
+            broker (Broker): The broker instance containing non-empty trading history,
+                typically after a backtest run.
             bar_size (str): The time interval of each bar in the data, supported units
                 are 'S' for seconds, 'T' for minutes, 'H' for hours and 'D' for days
                 (default is "1D").
@@ -36,9 +37,26 @@ class Analyzer:
             trading_days_per_year (int): Number of trading days per year (default is
                 252, which assumes US equities; adjust as needed for other markets).
         """
+        if not isinstance(bar_size, str) or len(bar_size) < 2:
+            raise ValueError(
+                "bar_size must be a positive integer followed by one of: S, T, H, D"
+            )
+        if trading_hours_per_day <= 0.0:
+            raise ValueError("trading_hours_per_day must be greater than 0")
+        if trading_days_per_year <= 0:
+            raise ValueError("trading_days_per_year must be greater than 0")
 
-        value = int(bar_size[:-1])
+        value_str = bar_size[:-1]
         bar_unit = bar_size[-1]
+        if not value_str.isdigit():
+            raise ValueError(
+                "bar_size must be a positive integer followed by one of: S, T, H, D"
+            )
+        value = int(value_str)
+        if value <= 0:
+            raise ValueError(
+                "bar_size must be a positive integer followed by one of: S, T, H, D"
+            )
         seconds_multiplier = {
             "S": 1,
             "T": 60,
@@ -54,6 +72,25 @@ class Analyzer:
 
         self.broker = broker
         self.analysis_df = pd.DataFrame(self.broker.history)
+        required_history_columns = {
+            "timestamp",
+            "cash",
+            "long_position_value",
+            "short_position_value",
+            "total_value",
+            "positions",
+        }
+        missing_columns = sorted(
+            required_history_columns.difference(self.analysis_df.columns)
+        )
+        if missing_columns:
+            raise ValueError(
+                "broker history is missing required columns: "
+                + ", ".join(f"'{column}'" for column in missing_columns)
+            )
+        if self.analysis_df.empty:
+            raise ValueError("broker history must not be empty")
+
         self.analysis_df["returns"] = self.analysis_df["total_value"].pct_change()
         self.analysis_df["drawdown"] = (
             self.analysis_df["total_value"].cummax() - self.analysis_df["total_value"]

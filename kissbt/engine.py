@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from kissbt._market_data import validate_benchmark_data, validate_market_data_frame
 from kissbt.broker import Broker
 from kissbt.entities import ClosedPosition
 from kissbt.strategy import Strategy
@@ -37,30 +38,12 @@ class Engine:
 
     def _validate_data(self, data: pd.DataFrame) -> None:
         """Validate data shape early to provide actionable errors."""
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError("data must be a pandas DataFrame")
-
-        if data.empty:
-            raise ValueError("data must not be empty")
-
-        if not isinstance(data.index, pd.MultiIndex):
-            raise ValueError(
-                "data index must be a MultiIndex named ['timestamp', 'ticker']"
-            )
-
-        names = list(data.index.names)
-        if len(names) < 2 or names[0] != "timestamp" or names[1] != "ticker":
-            raise ValueError(
-                "data index must be a MultiIndex named ['timestamp', 'ticker']"
-            )
-
-        required_columns = {"open", "close"}
-        missing_columns = sorted(required_columns.difference(data.columns))
-        if missing_columns:
-            raise ValueError(
-                "data is missing required columns: "
-                + ", ".join(f"'{column}'" for column in missing_columns)
-            )
+        validate_market_data_frame(
+            data,
+            required_columns=("open", "close"),
+            context="data",
+        )
+        validate_benchmark_data(data, self.broker.benchmark, context="data")
 
     def run(self, data: pd.DataFrame) -> BacktestResult:
         self._validate_data(data)

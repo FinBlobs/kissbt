@@ -77,8 +77,26 @@ print(metrics["total_return"])
 `Engine.run(data)` expects a pandas `DataFrame` with:
 
 - MultiIndex named `("timestamp", "ticker")`
+- Unique `("timestamp", "ticker")` rows
 - Required columns: `open`, `close`
 - Additional columns for `LIMIT` orders: `high`, `low`
+- If `Broker(benchmark=...)` is configured, the benchmark ticker must be present for every timestamp
+
+## Execution Model
+
+`kissbt` uses a simple next-bar execution model:
+
+- `Strategy.generate_orders(...)` runs after the broker has processed the current bar
+- Orders placed during bar `t` are evaluated on bar `t + 1`
+- `OPEN` orders use the next bar `open`
+- `CLOSE` orders use the next bar `close`
+- `LIMIT` orders use the next bar `open`/`high`/`low` according to the limit-fill rules
+- `Engine.run(...)` liquidates any remaining positions on the final bar after strategy execution
+
+Two additional behaviors matter in practice:
+
+- If a held ticker disappears from the current universe, `Broker.update(...)` closes it at the previous bar `close`
+- Good-till-cancel orders remain pending until they fill or the run ends
 
 ## Python API
 
@@ -133,6 +151,9 @@ metrics = Analyzer(broker).get_performance_metrics()
 print(metrics)
 ```
 
+`Analyzer(...)` expects non-empty broker history, so construct it after the
+broker has processed at least one bar.
+
 ## Command Line Usage
 
 The CLI is useful when you want reproducible runs from scripts, CI, or shell workflows.
@@ -175,6 +196,51 @@ The command writes a JSON report with:
 - `events`
 
 Non-finite numeric values are normalized to `null` to keep output strict JSON.
+
+`summary` currently contains:
+
+- `bars`
+- `final_portfolio_value`
+- `closed_positions`
+- `events`
+
+Example shape:
+
+```json
+{
+  "summary": {
+    "bars": 252,
+    "final_portfolio_value": 108734.12,
+    "closed_positions": 14,
+    "events": 28
+  },
+  "metrics": {
+    "total_return": 0.0873412,
+    "profit_factor": 1.91
+  },
+  "closed_positions": [
+    {
+      "ticker": "AAPL",
+      "size": 10.0,
+      "entry_price": 100.0,
+      "entry_timestamp": "2024-01-02T00:00:00",
+      "exit_price": 108.5,
+      "exit_timestamp": "2024-01-15T00:00:00",
+      "pnl": 85.0
+    }
+  ],
+  "events": [
+    {
+      "type": "order_executed",
+      "timestamp": "2024-01-02T00:00:00",
+      "ticker": "AAPL",
+      "size": 10.0,
+      "order_type": "open",
+      "price": 100.0
+    }
+  ]
+}
+```
 
 ## Development
 
