@@ -44,7 +44,7 @@ class Broker:
             start_capital: Initial amount of cash available for trading, defaults to
                 100000.
             fees: Commission or transaction fee applied to each trade, defaults to
-                0.0050.
+                0.001.
             long_only: If True, restricts trading to long positions only.
                 Defaults to True.
             short_fee_rate: Annual fee rate for maintaining short positions.
@@ -52,6 +52,15 @@ class Broker:
             benchmark: Symbol used for performance comparison.
                 If provided, broker tracks performance against this symbol.
         """
+        if start_capital <= 0.0:
+            raise ValueError("start_capital must be greater than 0")
+        if not 0.0 <= fees < 1.0:
+            raise ValueError("fees must be between 0 (inclusive) and 1 (exclusive)")
+        if short_fee_rate < 0.0:
+            raise ValueError("short_fee_rate must be non-negative")
+        if benchmark is not None and not benchmark.strip():
+            raise ValueError("benchmark must not be empty")
+
         self._cash = start_capital
         self._start_capital = start_capital
         self._fees = fees
@@ -108,6 +117,11 @@ class Broker:
         )
         self._history["positions"].append(len(self._open_positions))
         if self._benchmark is not None:
+            if self._benchmark not in self._current_bar.index:
+                raise ValueError(
+                    f"benchmark ticker '{self._benchmark}' is missing from the "
+                    f"current bar at {self._current_timestamp}"
+                )
             benchmark_close = self._current_bar.loc[self._benchmark, "close"]
             if len(self._history["benchmark"]) == 0:
                 self._benchmark_size = self._start_capital / (
@@ -601,8 +615,9 @@ class Broker:
         - 'benchmark': Benchmark performance if specified
 
         Returns:
-            Dict[str, List[float]]: Dictionary mapping metric names to value histories.
-                Returns a defensive copy to prevent external modifications.
+            Dict[str, List[float | int | pd.Timestamp]]: Shallow copy of the top-level
+                history mapping. The contained lists are live history buffers and
+                should be treated as read-only outside controlled test/setup code.
         """
         return self._history.copy()
 

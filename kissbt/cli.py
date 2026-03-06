@@ -9,6 +9,7 @@ from typing import Any
 
 import pandas as pd
 
+from kissbt._market_data_validation import validate_market_data_frame
 from kissbt.analyzer import Analyzer
 from kissbt.broker import Broker
 from kissbt.engine import Engine
@@ -59,6 +60,11 @@ def _load_market_data(input_path: Path, input_format: str) -> pd.DataFrame:
         data["timestamp"] = pd.to_datetime(data["timestamp"])
         data = data.set_index(["timestamp", "ticker"]).sort_index()
 
+    validate_market_data_frame(
+        data,
+        required_columns=("open", "close"),
+        context="input data",
+    )
     return data
 
 

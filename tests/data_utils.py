@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from kissbt._market_data_validation import validate_market_data_frame
+
 TECH_STOCK_TICKERS: tuple[str, ...] = (
     "AAPL",
     "GOOGL",
@@ -28,30 +30,13 @@ TRIM_START_DATE = "2022-01-01"
 TRIM_END_DATE = "2024-12-31"
 
 
-def normalize_market_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize index naming conventions across parquet/yfinance sources."""
-    if isinstance(df.index, pd.MultiIndex):
-        names = list(df.index.names)
-        if len(names) >= 2 and names[0] == "date":
-            names[0] = "timestamp"
-            df.index = df.index.set_names(names)
-    return df
-
-
 def validate_market_data(df: pd.DataFrame) -> None:
     """Validate integration dataset shape and required content."""
-    if not isinstance(df.index, pd.MultiIndex):
-        raise ValueError("Dataset must use a MultiIndex with timestamp and ticker.")
-
-    names = list(df.index.names)
-    if len(names) < 2 or names[0] != "timestamp" or names[1] != "ticker":
-        raise ValueError(
-            "Dataset index must be a MultiIndex named ['timestamp', 'ticker']."
-        )
-
-    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
-    if missing_columns:
-        raise ValueError(f"Dataset missing required columns: {missing_columns}")
+    validate_market_data_frame(
+        df,
+        required_columns=REQUIRED_COLUMNS,
+        context="Dataset",
+    )
 
     ticker_index = df.index.get_level_values("ticker")
     missing_tickers = sorted(set(TECH_STOCK_TICKERS).difference(set(ticker_index)))
@@ -110,6 +95,5 @@ def load_tech_stock_data(data_path: str, allow_download: bool) -> pd.DataFrame:
     else:
         raise FileNotFoundError(f"Expected integration dataset at {path}.")
 
-    df = normalize_market_data(df)
     validate_market_data(df)
     return df

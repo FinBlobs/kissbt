@@ -142,6 +142,37 @@ def test_run_rejects_missing_required_columns():
         engine.run(data)
 
 
+def test_run_rejects_duplicate_timestamp_ticker_rows():
+    broker = Broker()
+    strategy = DummyStrategy(broker)
+    engine = Engine(broker=broker, strategy=strategy)
+    data = pd.concat([_build_valid_data(), _build_valid_data().iloc[[0]]])
+
+    with pytest.raises(ValueError, match="index must contain unique"):
+        engine.run(data)
+
+
+def test_run_rejects_missing_benchmark_data_for_timestamp():
+    broker = Broker(benchmark="SPY")
+    strategy = DummyStrategy(broker)
+    engine = Engine(broker=broker, strategy=strategy)
+    data = pd.concat(
+        [
+            _build_valid_data(),
+            pd.DataFrame(
+                {"open": [500.0], "high": [505.0], "low": [495.0], "close": [502.0]},
+                index=pd.MultiIndex.from_tuples(
+                    [(pd.Timestamp("2024-01-01"), "SPY")],
+                    names=["timestamp", "ticker"],
+                ),
+            ),
+        ]
+    ).sort_index()
+
+    with pytest.raises(ValueError, match="missing benchmark ticker 'SPY'"):
+        engine.run(data)
+
+
 def test_run_raises_if_liquidation_does_not_close_positions():
     class BrokenLiquidationBroker(Broker):
         def liquidate_positions(self):  # type: ignore[override]

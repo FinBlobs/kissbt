@@ -32,6 +32,8 @@ This changelog follows the Keep a Changelog style.
 - README now includes a full in-memory example and CLI usage example.
 - `AGENTS.md` was revised to define long-lived standards for API discipline,
   documentation quality, and behavior contracts.
+- README now documents execution semantics, benchmark requirements, and the
+  CLI JSON report shape more explicitly.
 
 ### Fixed
 - Correct short-position closed-trade accounting so entry/exit semantics are
@@ -45,6 +47,10 @@ This changelog follows the Keep a Changelog style.
   environments.
 - `Engine` now only requires `open`/`close` globally; `high`/`low` are required
   only when evaluating `LIMIT` orders.
+- Engine/CLI input validation now rejects duplicate `("timestamp", "ticker")`
+  rows and missing benchmark coverage with explicit errors.
+- `Broker` and `Analyzer` now fail fast on invalid runtime configuration
+  instead of relying on later Pandas/math failures.
 - `Broker.events` now returns defensive copies of event items.
 - CLI JSON output now normalizes non-finite values to `null` and writes strict
   JSON.
