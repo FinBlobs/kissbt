@@ -7,6 +7,12 @@
 - Keep `kissbt` small, understandable, and reliable for real backtesting use.
 - Optimize for long-term maintainability over short-term feature volume.
 
+## Decision Rules
+- Read the relevant code, tests, and docs before changing behavior.
+- Keep changes minimal and targeted to the user request.
+- If a request conflicts with a core invariant, public API contract, or these instructions, call out the conflict before changing code.
+- Prefer making behavior explicit in tests/docs over relying on implied intent.
+
 ## Engineering Principles
 - Prefer the simplest implementation that meets the requirement.
 - Add complexity only for clear gains in correctness, maintainability, or major performance.
@@ -33,6 +39,12 @@
 - Prefer explicit invariants over silent fallback behavior.
 - Keep output schemas deterministic and machine-consumable.
 
+## Change Workflow
+- Inspect the relevant implementation and tests before editing.
+- Make the smallest coherent change that satisfies the task.
+- Run targeted checks while iterating when practical; run the full verification gate before final handoff for user-visible changes.
+- Update tests, docs, and changelog entries together when public behavior or guidance changes.
+
 ## Refactor Threshold
 - Only refactor when it removes duplicated business rules, improves correctness, or makes public behavior easier to understand.
 - Do not split modules or introduce abstraction layers only to make the code look cleaner.
@@ -58,7 +70,10 @@
 - When changing validation, cover both success paths and actionable failure messages.
 - When changing execution semantics or CLI JSON, add or update tests before changing docs.
 
-## Final Gate (Before Commit/Push)
+## Final Verification
+- Before final handoff for user-visible code, docs, or CI changes, run:
+- If an environment limitation prevents a command from running, report that clearly in the handoff.
+
 ```bash
 uv run ruff format --check .
 uv run ruff check .

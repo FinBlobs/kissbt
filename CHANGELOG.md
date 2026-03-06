@@ -17,6 +17,8 @@ This changelog follows the Keep a Changelog style.
 - Top-level package exports in `kissbt.__init__`.
 
 ### Changed
+- `AGENTS.md` now defines explicit decision rules, change workflow expectations,
+  and final handoff verification requirements for repository work.
 - `ClosedPosition` now uses `entry_price`, `entry_timestamp`, `exit_price`,
   `exit_timestamp` as canonical trade lifecycle fields.
 - Analyzer win-rate and profit-factor calculations now use
