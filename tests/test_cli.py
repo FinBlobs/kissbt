@@ -32,9 +32,7 @@ def _write_strategy_module(tmp_path) -> None:
 
 def _write_market_data_csv(tmp_path, *, integer_values: bool = False):
     csv_path = tmp_path / "market_data.csv"
-    price_values: list[int | float] = (
-        [100, 101] if integer_values else [100.0, 101.0]
-    )
+    price_values: list[int | float] = [100, 101] if integer_values else [100.0, 101.0]
     pd.DataFrame(
         {
             "timestamp": ["2024-01-01", "2024-01-02"],
